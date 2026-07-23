@@ -165,6 +165,10 @@ site_days=[578,613,502,503,448,202,313,596,481,469,364,261,158,288,508,418,390,4
 short_days=[22,700,50,8,11,51,46,9,365,34,6,13,6,10,3,9,12,41,7,8,5,1,5,12,8,3,16,25,14,3,0]
 _sd=[("Jun",d) for d in range(23,31)]+[("Jul",d) for d in range(1,24)]
 short_labels=[f"{m} {d}" for m,d in _sd]
+# Short.io reports human vs bot only at the domain level (1,521 human of 2,202 = 69.1%).
+# Extrapolate per-day human clicks at that rate.
+_HR=1521/2202
+short_days_human=[round(v*_HR) for v in short_days]
 
 # ============ HERO ============
 hero_tiles=tiles([
@@ -256,24 +260,24 @@ s2=section("website","Brand & acquisition",BLUE,
 
 # ============ SECTION 2B: SHORT.IO LINK TRACKING ============
 sh_tiles=tiles([
-    ("2,202","Total link clicks",GREEN,"down 16% vs prior 30d"),
-    ("1,521","Human clicks",TEAL,"down 21% · ~31% are bots"),
-    ("1,083","ADA email link clicks",PINK,"49% of all clicks"),
+    ("1,521","Human clicks",GREEN,"down 21% vs prior 30d"),
+    ("681","Bot / scanner clicks",MUTED,"extrapolated: 2,202 total − 1,521"),
+    ("~748","ADA email link (human est.)",PINK,"~49% of clicks"),
     ("0","New short links created",NAVY),
 ])
-sh_links=chart_card("Top branded links",
-    hbars([("/ada-email",1083,PINK),("/* (other)",254,MAUVE),("/ (root)",86,BLUE),("/ada-website",49,TEAL),
-           ("/website",12,GREEN),("/ada-member-advantage",10,PURPLE),("/onDiem-youtube",8,ORANGE)]),
-    "The ADA partnership email link (campaign ada_partnership_2025) is ~half of all clicks. These links point to varied destinations — ADA, partner pages, YouTube — not only ondiem.com.")
-sh_daily=chart_card("Daily clicks",
-    area(short_days, short_labels, color=GREEN, hi_idx=[1,8]),
-    "Two email-driven spikes — Jun 24 (700) and Jul 1 (365) — then a long tail, with no new links created in the window.")
+sh_links=chart_card("Top branded links — human clicks (est.)",
+    hbars([("/ada-email",748,PINK),("/* (other)",175,MAUVE),("/ (root)",59,BLUE),("/ada-website",34,TEAL),
+           ("/website",8,GREEN),("/ada-member-advantage",7,PURPLE),("/onDiem-youtube",6,ORANGE)]),
+    "Human figures apply the domain-wide 69% human rate (Short.io reports human vs. bot only at the domain level). The ADA partnership email link (campaign ada_partnership_2025) is ~half of all clicks; links route to varied destinations — ADA, partner pages, YouTube — not only ondiem.com.")
+sh_daily=chart_card("Daily human clicks (est.)",
+    area(short_days_human, short_labels, color=GREEN, hi_idx=[1,8]),
+    "Two email-driven spikes — Jun 24 (~483) and Jul 1 (~252 human) — then a long tail, with no new links created in the window.")
 sh_quality=chart_card("Human vs. automated clicks",
-    donut([("Human clicks",1521,GREEN),("Bots / scanners",681,MUTED)],"69%","human"),
-    "~31% of clicks are non-human. The top ‘city’ is Ashburn, VA (628 — an AWS data-center hub) and clicks appear from China, the Netherlands and Singapore — typical email security-scanner traffic. Read the human-click figure, not the raw total.")
+    donut([("Human clicks",1521,GREEN),("Bots / scanners (extrapolated)",681,MUTED)],"1,521","human"),
+    "Of 2,202 logged clicks, ~31% are non-human and are filtered out of the figures above. The top ‘city’ is Ashburn, VA (628 — an AWS data-center hub), with more from China, the Netherlands and Singapore — typical email security-scanner traffic.")
 s_short=section("links","Link tracking",TEAL,
     'Branded links — <span class="hl" style="background:'+GREEN+'33">Short.io (ondiem.co)</span>',
-    "Click performance on onDiem's branded short links — mostly campaign, email and partnership links. Window Jun 23 – Jul 24, 2026.",
+    "Human click performance on onDiem's branded short links — mostly campaign, email and partnership links. Bot/scanner traffic is extrapolated out. Window Jun 23 – Jul 24, 2026.",
     sh_tiles+'<div class="grid2">'+sh_links+sh_daily+'</div>'+sh_quality)
 
 # ============ SECTION 3: PAID SEARCH ============

@@ -339,10 +339,15 @@ em_survey=card('<h3 class="ctitle">What practices told the survey</h3>'
          ["Cancellation policy","Polarizing — several strongly negative"],
          ["Overall satisfaction","Mid-scale — room to move to advocates"]],
         aligns=["left","left"]))
+inflight=('<div class="inflight"><span class="if-tag">IN FLIGHT</span>'
+    '<div><b>2nd follow-up sent Jul 22 — results pending.</b> A resend to non-responders '
+    '(“What would make onDiem work better for you?”) that applies this report’s recommendations: '
+    'benefit-led subject, a stated “2-minute” ask, and previewed questions. Open / click / response '
+    'performance will appear in next period’s report.</div></div>')
 s5=section("email","Lifecycle",GREEN,
     'Email &amp; survey — <span class="hl" style="background:'+GREEN+'33">Practice First Shift Survey</span>',
     "A single send to 1,053 practices, plus the resulting survey. Solid deliverability, but a mobile CTA gap and a clear message on where practices feel friction.",
-    s5_tiles+'<div class="grid2">'+em_funnel+em_mobile+'</div>'+em_survey)
+    s5_tiles+'<div class="grid2">'+em_funnel+em_mobile+'</div>'+em_survey+inflight)
 
 # ============ SECTION 5B: PROFESSIONAL FIRST-SHIFT FEEDBACK ============
 vp_tiles=tiles([
@@ -528,6 +533,9 @@ section{{margin-top:52px}}
 .co-list li{{padding-left:22px;position:relative;font-size:14px;color:#dfe6ee}}
 .co-list li:before{{content:'';position:absolute;left:0;top:8px;width:8px;height:8px;border-radius:50%;background:{TEAL}}}
 .co-list b{{color:#fff}}
+.inflight{{display:flex;gap:14px;align-items:flex-start;background:{YELLOW}14;border:1px dashed {YELLOW};border-radius:12px;padding:14px 16px;margin-top:16px;font-size:13.5px;color:{INK}}}
+.if-tag{{flex:0 0 auto;background:{YELLOW};color:{NAVY};font-size:10px;font-weight:800;letter-spacing:1px;padding:4px 9px;border-radius:5px;margin-top:1px}}
+.inflight b{{color:{NAVY}}}
 .foot{{margin-top:44px;padding-top:18px;border-top:1px solid {LINE};font-size:11.5px;color:{MUTED};text-align:center}}
 @media(max-width:720px){{.grid2,.twocol{{grid-template-columns:1fr}}.title{{font-size:32px}}.donut{{width:160px;height:160px}}}}
 """

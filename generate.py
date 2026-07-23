@@ -164,7 +164,7 @@ site_days=[578,613,502,503,448,202,313,596,481,469,364,261,158,288,508,418,390,4
 # ============ HERO ============
 hero_tiles=tiles([
     ("29,862","Platform active users",TEAL,"app.ondiem.com · 30 days"),
-    ("1,294","Shifts confirmed",GREEN,"on the marketplace"),
+    ("1,294","Shift confirmations",GREEN,"confirmation events (GA4)"),
     ("567","New pros signed up",PINK,"registration completed"),
     ("15,288","Marketing site views",BLUE,"ondiem.com"),
     ("8,872","Total social followers",PURPLE,"IG + FB + LinkedIn"),
@@ -177,7 +177,7 @@ s1_tiles=tiles([
     ("290K","Page views",NAVY),
     ("2,844","Pros signed in",PINK),
     ("1,406","Practices signed in",BLUE),
-    ("1,294","Shifts confirmed",GREEN),
+    ("1,294","Shift confirmations",GREEN,"GA4 events"),
 ])
 plat_area=chart_card("Daily active users — the weekly Monday spike",
     area(plat_days, day_labels, color=TEAL, hi_idx=mondays),
@@ -186,7 +186,7 @@ plat_practice=funnel([
     ("Listings created — by 627 practices","2,641",TEAL),
     ("Shift-creation flows started","1,721",TEAL),
     ("Shift offers sent to pros (largely automated)","142,674",TEAL),
-    ("Shifts confirmed","1,294",GREEN),
+    ("Shift confirmations (GA4 event)","1,294",GREEN),
 ])
 plat_pro=funnel([
     ("Job searches — by 3,153 pros","9,643",PINK),
@@ -198,7 +198,10 @@ plat_funnels=card(
     '<div class="twocol">'
     f'<div><div class="fhead" style="color:{TEAL}">PRACTICE SIDE — posting &amp; booking</div>{plat_practice}</div>'
     f'<div><div class="fhead" style="color:{PINK}">PROFESSIONAL SIDE — finding work</div>{plat_pro}</div>'
-    '</div>')
+    '</div>'
+    '<p class="fnote">Figures are GA4 <b>event counts</b>, not verified database bookings. '
+    '‘Shift confirmations’ (<code>temp_shift_confirmed</code>) fired 1,294× from just 32 accounts, and shift offers from 64 — '
+    'both are driven by a small number of practice-admin or automated senders, so they indicate activity volume rather than unique completed shifts.</p>')
 plat_device=chart_card("Device — desktop-first",
     donut([("Desktop",22257,NAVY),("Mobile",7549,PINK),("Tablet",56,YELLOW)],"75%","desktop"),
     "The opposite of the marketing site: practice staff and admins work at the front desk on Windows/desktop.")
@@ -533,6 +536,8 @@ section{{margin-top:52px}}
 .co-list li{{padding-left:22px;position:relative;font-size:14px;color:#dfe6ee}}
 .co-list li:before{{content:'';position:absolute;left:0;top:8px;width:8px;height:8px;border-radius:50%;background:{TEAL}}}
 .co-list b{{color:#fff}}
+.fnote{{margin-top:14px;padding-top:12px;border-top:1px solid {LINE};font-size:12px;color:{MUTED};line-height:1.5}}
+.fnote b{{color:{INK}}} .fnote code{{background:{CREAM};border:1px solid {LINE};border-radius:4px;padding:1px 5px;font-size:11px;color:{NAVY}}}
 .inflight{{display:flex;gap:14px;align-items:flex-start;background:{YELLOW}14;border:1px dashed {YELLOW};border-radius:12px;padding:14px 16px;margin-top:16px;font-size:13.5px;color:{INK}}}
 .if-tag{{flex:0 0 auto;background:{YELLOW};color:{NAVY};font-size:10px;font-weight:800;letter-spacing:1px;padding:4px 9px;border-radius:5px;margin-top:1px}}
 .inflight b{{color:{NAVY}}}

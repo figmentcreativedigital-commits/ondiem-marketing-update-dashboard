@@ -161,6 +161,11 @@ mondays=[0,7,14,21,28]
 # ---- marketing site daily totals ----
 site_days=[578,613,502,503,448,202,313,596,481,469,364,261,158,288,508,418,390,423,256,199,306,489,384,381,395,287,169,197,401,427]
 
+# ---- Short.io daily clicks (Jun 23 - Jul 23) ----
+short_days=[22,700,50,8,11,51,46,9,365,34,6,13,6,10,3,9,12,41,7,8,5,1,5,12,8,3,16,25,14,3,0]
+_sd=[("Jun",d) for d in range(23,31)]+[("Jul",d) for d in range(1,24)]
+short_labels=[f"{m} {d}" for m,d in _sd]
+
 # ============ HERO ============
 hero_tiles=tiles([
     ("29,862","Platform active users",TEAL,"app.ondiem.com · 30 days"),
@@ -248,6 +253,28 @@ s2=section("website","Brand & acquisition",BLUE,
     'Marketing site — <span class="hl" style="background:'+BLUE+'33">ondiem.com</span>',
     "The public-facing site. Mobile-first and built for the professional audience, powered by search and brand — not by social or email.",
     s2_tiles+'<div class="grid2">'+site_channels+site_pages+'</div>'+'<div class="grid2">'+site_trend+site_mobile+'</div>'+site_partners)
+
+# ============ SECTION 2B: SHORT.IO LINK TRACKING ============
+sh_tiles=tiles([
+    ("2,202","Total link clicks",GREEN,"down 16% vs prior 30d"),
+    ("1,521","Human clicks",TEAL,"down 21% · ~31% are bots"),
+    ("1,083","ADA email link clicks",PINK,"49% of all clicks"),
+    ("0","New short links created",NAVY),
+])
+sh_links=chart_card("Top branded links",
+    hbars([("/ada-email",1083,PINK),("/* (other)",254,MAUVE),("/ (root)",86,BLUE),("/ada-website",49,TEAL),
+           ("/website",12,GREEN),("/ada-member-advantage",10,PURPLE),("/onDiem-youtube",8,ORANGE)]),
+    "The ADA partnership email link (campaign ada_partnership_2025) is ~half of all clicks. These links point to varied destinations — ADA, partner pages, YouTube — not only ondiem.com.")
+sh_daily=chart_card("Daily clicks",
+    area(short_days, short_labels, color=GREEN, hi_idx=[1,8]),
+    "Two email-driven spikes — Jun 24 (700) and Jul 1 (365) — then a long tail, with no new links created in the window.")
+sh_quality=chart_card("Human vs. automated clicks",
+    donut([("Human clicks",1521,GREEN),("Bots / scanners",681,MUTED)],"69%","human"),
+    "~31% of clicks are non-human. The top ‘city’ is Ashburn, VA (628 — an AWS data-center hub) and clicks appear from China, the Netherlands and Singapore — typical email security-scanner traffic. Read the human-click figure, not the raw total.")
+s_short=section("links","Link tracking",TEAL,
+    'Branded links — <span class="hl" style="background:'+GREEN+'33">Short.io (ondiem.co)</span>',
+    "Click performance on onDiem's branded short links — mostly campaign, email and partnership links. Window Jun 23 – Jul 24, 2026.",
+    sh_tiles+'<div class="grid2">'+sh_links+sh_daily+'</div>'+sh_quality)
 
 # ============ SECTION 3: PAID SEARCH ============
 s3_tiles=tiles([
@@ -447,7 +474,7 @@ take=callout("What this means for next week",[
 
 # ============ ASSEMBLE ============
 nav=('<nav class="toc"><a href="#marketplace">Marketplace</a><a href="#website">Website</a>'
-     '<a href="#paid">Paid</a><a href="#social">Social</a><a href="#email">Email</a>'
+     '<a href="#links">Links</a><a href="#paid">Paid</a><a href="#social">Social</a><a href="#email">Email</a>'
      '<a href="#profeedback">Pro feedback</a><a href="#conversion">Conversion</a><a href="#profiles">Profiles</a></nav>')
 
 header=(f'<header class="masthead"><div class="mh-top"><span class="brand">'
@@ -459,7 +486,7 @@ header=(f'<header class="masthead"><div class="mh-top"><span class="brand">'
 body=(header+
       f'<section class="hero"><div class="sec-head">{eyebrow("At a glance", NAVY)}'
       f'<h2 class="sec-title">The week in six numbers</h2></div>{hero_tiles}</section>'+
-      s1+s2+s3+s4+s5+s5b+s6+s7+
+      s1+s2+s_short+s3+s4+s5+s5b+s6+s7+
       f'<section>{take}</section>'+
       f'<footer class="foot">onDiem Weekly Performance Report · Reporting window Jun 22 – Jul 21, 2026 (email &amp; profile reports as of Jul 20) · Sources: GA4, Metricool, Google Ads, HubSpot · Internal use</footer>')
 

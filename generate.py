@@ -12,11 +12,16 @@ def esc(s): return html.escape(str(s))
 def eyebrow(text, color=ORANGE):
     return f'<span class="eyebrow" style="background:{color}22;color:{color}">{esc(text)}</span>'
 
-def tile(num, label, accent=TEAL, sub=""):
+def tile(num, label, accent=TEAL, sub="", wow=""):
     subhtml=f'<div class="t-sub">{esc(sub)}</div>' if sub else ""
+    wowhtml=f'<div class="t-wow">{wow}</div>' if wow else ""
     return (f'<div class="tile" style="border-top:3px solid {accent}">'
             f'<div class="t-num">{esc(num)}</div>'
-            f'<div class="t-lab">{esc(label)}</div>{subhtml}</div>')
+            f'<div class="t-lab">{esc(label)}</div>{subhtml}{wowhtml}</div>')
+
+def wow_html(seven, delta_pct, kind='WoW'):
+    up = delta_pct>=0; col = GREEN if up else RED; sign='▲' if up else '▼'
+    return f'{esc(seven)} · <span style="color:{col};font-weight:700">{sign}{abs(delta_pct):.0f}%</span> {kind}'
 
 def tiles(items):
     return '<div class="tiles">'+''.join(tile(*i) for i in items)+'</div>'
@@ -101,6 +106,42 @@ def donut(segments, center_num="", center_lab=""):
     return (f'<div class="donutwrap"><svg viewBox="0 0 240 240" class="donut" role="img">{"".join(rows)}</svg>'
             f'<div class="legend">{"".join(leg)}</div></div>')
 
+def sparkline(vals, color, w=160, h=42):
+    maxv=max(vals) or 1; n=len(vals)
+    if n<2: return ""
+    pts=[(3+i/(n-1)*(w-6), h-6-(v/maxv)*(h-14)) for i,v in enumerate(vals)]
+    line=" ".join(f"{x:.1f},{y:.1f}" for x,y in pts)
+    base=h-4
+    fill=f"M{pts[0][0]:.1f},{base:.1f} "+" ".join(f"L{x:.1f},{y:.1f}" for x,y in pts)+f" L{pts[-1][0]:.1f},{base:.1f} Z"
+    return (f'<svg viewBox="0 0 {w} {h}" class="spark">'
+            f'<path d="{fill}" fill="{color}1e"/>'
+            f'<polyline points="{line}" fill="none" stroke="{color}" stroke-width="2" stroke-linejoin="round"/>'
+            f'<circle cx="{pts[-1][0]:.1f}" cy="{pts[-1][1]:.1f}" r="2.6" fill="{color}"/></svg>')
+
+def compare_spark(cur, prev, color, w=172, h=46):
+    n=len(cur); maxv=max(cur+prev) or 1
+    def mk(vals): return [(3+i/(n-1)*(w-6), h-6-(v/maxv)*(h-14)) for i,v in enumerate(vals)]
+    cp=mk(cur); pp=mk(prev)
+    cl=" ".join(f"{x:.1f},{y:.1f}" for x,y in cp)
+    pl=" ".join(f"{x:.1f},{y:.1f}" for x,y in pp)
+    return (f'<svg viewBox="0 0 {w} {h}" class="spark">'
+            f'<polyline points="{pl}" fill="none" stroke="{MUTED}" stroke-width="1.6" stroke-dasharray="3 2" opacity="0.75"/>'
+            f'<polyline points="{cl}" fill="none" stroke="{color}" stroke-width="2.2" stroke-linejoin="round"/>'
+            f'<circle cx="{cp[-1][0]:.1f}" cy="{cp[-1][1]:.1f}" r="2.6" fill="{color}"/></svg>')
+
+def last7(rng, prng, cur, prev, unit, cur_s, prev_s, color):
+    delta=((cur-prev)/prev*100) if prev else 0.0
+    up=delta>=0; sign="▲" if up else "▼"; dc=GREEN if up else RED
+    return (f'<div class="last7" style="border-left:4px solid {color}">'
+            f'<div class="l7-a"><div class="l7-tag">LAST 7 DAYS · {esc(rng)}</div>'
+            f'<div class="l7-val">{cur:,} <span class="l7-lab">{esc(unit)}</span></div>'
+            f'<div class="l7-prev">Previous 7 days ({esc(prng)}): <b>{prev:,}</b></div></div>'
+            f'<div class="l7-b"><span class="l7-delta" style="color:{dc}">{sign} {abs(delta):.0f}%</span>'
+            f'<span class="l7-vs">week over week</span></div>'
+            f'<div class="l7-c">{compare_spark(cur_s, prev_s, color)}'
+            f'<div class="l7-leg"><span class="sw" style="background:{color}"></span>this wk'
+            f'<span class="sw" style="background:{MUTED}"></span>prev wk</div></div></div>')
+
 def table(headers, rows, aligns=None, hi_cols=None, hi_color=PINK):
     hi_cols=hi_cols or []
     aligns=aligns or ["left"]+["right"]*(len(headers)-1)
@@ -123,10 +164,13 @@ def stepper(steps):
     return '<div class="stepper">'+''.join(items)+'</div>'
 
 def funnel(steps):
-    # steps: (label, value, color) rendered as descending stat blocks
+    # steps: (label, value, color[, week7]) rendered as descending stat blocks
     out=[]
-    for i,(lab,val,col) in enumerate(steps):
-        out.append(f'<div class="fstep" style="border-left:4px solid {col}"><div class="fval">{esc(val)}</div><div class="flab">{esc(lab)}</div></div>')
+    for i,step in enumerate(steps):
+        lab,val,col = step[0],step[1],step[2]
+        wk = step[3] if len(step)>3 else None
+        badge = f'<span class="fweek">7d&nbsp;{esc(wk)}</span>' if wk else ''
+        out.append(f'<div class="fstep" style="border-left:4px solid {col}"><div class="frow"><div class="fval">{esc(val)}</div>{badge}</div><div class="flab">{esc(lab)}</div></div>')
         if i<len(steps)-1: out.append('<div class="farr">▼</div>')
     return '<div class="funnel">'+''.join(out)+'</div>'
 
@@ -161,44 +205,69 @@ mondays=[0,7,14,21,28]
 # ---- marketing site daily totals ----
 site_days=[578,613,502,503,448,202,313,596,481,469,364,261,158,288,508,418,390,423,256,199,306,489,384,381,395,287,169,197,401,427]
 
+# ---- Short.io daily clicks (Jun 23 - Jul 23) ----
+short_days=[22,700,50,8,11,51,46,9,365,34,6,13,6,10,3,9,12,41,7,8,5,1,5,12,8,3,16,25,14,3,0]
+_sd=[("Jun",d) for d in range(23,31)]+[("Jul",d) for d in range(1,24)]
+short_labels=[f"{m} {d}" for m,d in _sd]
+# Short.io reports human vs bot only at the domain level (1,521 human of 2,202 = 69.1%).
+# Extrapolate per-day human clicks at that rate.
+_HR=1521/2202
+short_days_human=[round(v*_HR) for v in short_days]
+
+# ---- last-7-day summaries (only where daily data exists) ----
+def d7(a): return sum(a[-7:]), sum(a[-14:-7]), a[-7:], a[-14:-7]
+# Real last-7-day exports (Jul 23–29) vs the prior week (Jul 15–21) from the 30-day daily series.
+plat_cur=[913,581,267,347,3877,928,831]      # app.ondiem.com daily active users, Jul 23–29
+plat_prev=[873,593,250,281,4123,1211,956]    # Jul 16–22 (from 14-day series, contiguous)
+site_cur=[331,234,172,197,342,313,318]       # ondiem.com daily page-view visitors, Jul 23–29
+site_prev=[322,243,137,157,336,381,365]      # Jul 16–22 (contiguous prior week, from 14-day actions export)
+short_cur_h=[0,0,259,17,9,5,5]     # Short.io daily HUMAN clicks Jul 23–29 (real; Jul 25 = ADA email send)
+short_prev_h=[8,6,2,11,17,10,2]    # Jul 16–22 human (est. prior-week tail)
+plat_last7=last7("Jul 23–29","Jul 16–22", sum(plat_cur), sum(plat_prev), "active users", plat_cur, plat_prev, TEAL)
+site_last7=last7("Jul 23–29","Jul 16–22", sum(site_cur), sum(site_prev), "visitors", site_cur, site_prev, BLUE)
+short_last7=last7("Jul 23–29","Jul 16–22", sum(short_cur_h), sum(short_prev_h), "human clicks", short_cur_h, short_prev_h, GREEN)
+
 # ============ HERO ============
 hero_tiles=tiles([
-    ("29,862","Platform active users",TEAL,"app.ondiem.com · 30 days"),
-    ("1,294","Shifts confirmed",GREEN,"on the marketplace"),
-    ("567","New pros signed up",PINK,"registration completed"),
-    ("15,288","Marketing site views",BLUE,"ondiem.com"),
-    ("8,872","Total social followers",PURPLE,"IG + FB + LinkedIn"),
-    ("$1,523","Paid search spend",ORANGE,"Google Ads, brand"),
+    ("29,862","Platform active users",TEAL,"app.ondiem.com · 30 days", wow_html("7d 7,744", -7, "WoW")),
+    ("1,294","Shift confirmations",GREEN,"GA4 events · 30 days", wow_html("7d 327", 16, "WoW")),
+    ("567","New pros signed up",PINK,"signups · 30 days", wow_html("7d 128", -3, "vs pace")),
+    ("15,288","Marketing site views",BLUE,"ondiem.com · 30 days", wow_html("7d 1,907", -2, "WoW")),
+    ("8,872","Total social followers",PURPLE,"IG + FB + LinkedIn", f'7d <span style="color:{GREEN};font-weight:700">+5</span> net · vs +32 last wk'),
+    ("$1,523","Paid search spend",ORANGE,"Google Ads · 30 days", wow_html("7d $307", -13, "vs pace")),
 ])
 
 # ============ SECTION 1: MARKETPLACE ============
 s1_tiles=tiles([
-    ("29,862","Active users",TEAL),
-    ("290K","Page views",NAVY),
-    ("2,844","Pros signed in",PINK),
-    ("1,406","Practices signed in",BLUE),
-    ("1,294","Shifts confirmed",GREEN),
+    ("29,862","Active users",TEAL,"", wow_html("7d 7,744", -7, "WoW")),
+    ("290K","Page views",NAVY,"", wow_html("7d 64.3K", -9, "WoW")),
+    ("2,844","Pros signed in",PINK,"", "7d 839 this wk"),
+    ("1,406","Practices signed in",BLUE,"", "7d 557 this wk"),
+    ("1,294","Shift confirmations",GREEN,"GA4 events", wow_html("7d 327", 16, "WoW")),
 ])
 plat_area=chart_card("Daily active users — the weekly Monday spike",
     area(plat_days, day_labels, color=TEAL, hi_idx=mondays),
     "Active users surge to 3,800–5,200 every Monday (▲ marked), then fall midweek and into the weekend (Jul 4 low = 191). The marketplace runs on a weekly shift-posting cycle.")
 plat_practice=funnel([
-    ("Listings created — by 627 practices","2,641",TEAL),
-    ("Shift-creation flows started","1,721",TEAL),
-    ("Shift offers sent to pros (largely automated)","142,674",TEAL),
-    ("Shifts confirmed","1,294",GREEN),
+    ("Listings created — by 627 practices","2,641",TEAL,"559"),
+    ("Shift-creation flows started","1,721",TEAL,"334"),
+    ("Shift offers sent to pros (largely automated)","142,674",TEAL,"33,606"),
+    ("Shift confirmations (GA4 event)","1,294",GREEN,"327"),
 ])
 plat_pro=funnel([
-    ("Job searches — by 3,153 pros","9,643",PINK),
-    ("Shifts viewed — by 6,692 pros","15,979",PINK),
-    ("Shift requests submitted — by 370 pros","2,766",PINK),
+    ("Job searches — by 3,153 pros","9,643",PINK,"1,990"),
+    ("Shifts viewed — by 6,692 pros","15,979",PINK,"3,032"),
+    ("Shift requests submitted — by 370 pros","2,766",PINK,"621"),
 ])
 plat_funnels=card(
     '<h3 class="ctitle">Two-sided marketplace funnel</h3>'
     '<div class="twocol">'
     f'<div><div class="fhead" style="color:{TEAL}">PRACTICE SIDE — posting &amp; booking</div>{plat_practice}</div>'
     f'<div><div class="fhead" style="color:{PINK}">PROFESSIONAL SIDE — finding work</div>{plat_pro}</div>'
-    '</div>')
+    '</div>'
+    '<p class="fnote">Big number = 30-day total (Jun 22–Jul 21); the <b>7d</b> badge is the most recent week (Jul 23–29). '
+    'This week tracked close to the 30-day weekly pace (≈ a seventh of each total) — shift offers and confirmations on pace, job searches and views a touch below. '
+    'Figures are GA4 <b>event counts</b>, not verified database bookings: ‘Shift confirmations’ (<code>temp_shift_confirmed</code>) fired from just a few practice-admin/automated accounts, so they indicate activity volume rather than unique completed shifts.</p>')
 plat_device=chart_card("Device — desktop-first",
     donut([("Desktop",22257,NAVY),("Mobile",7549,PINK),("Tablet",56,YELLOW)],"75%","desktop"),
     "The opposite of the marketing site: practice staff and admins work at the front desk on Windows/desktop.")
@@ -214,14 +283,14 @@ plat_pages=chart_card("Most-used pages",
 s1=section("marketplace","The core product",TEAL,
     'Marketplace — <span class="hl" style="background:'+TEAL+'33">app.ondiem.com</span>',
     "Where practices post shifts and professionals get booked. Desktop-first, sticky (1–13% bounce on logged-in pages), and driven by a strong weekly rhythm.",
-    s1_tiles+plat_area+plat_funnels+'<div class="grid2">'+plat_device+plat_sources+'</div>'+plat_pages)
+    s1_tiles+plat_area+plat_last7+plat_funnels+'<div class="grid2">'+plat_device+plat_sources+'</div>'+plat_pages)
 
 # ============ SECTION 2: MARKETING SITE ============
 s2_tiles=tiles([
-    ("15,288","Page views",BLUE),
-    ("96%","Organic + direct",NAVY),
-    ("52","Views from social",RED,"the weak link"),
-    ("90–165","Availability views / day",TEAL),
+    ("15,288","Page views",BLUE,"", wow_html("7d 1,907 visitors", -2, "WoW")),
+    ("96%","Organic + direct",NAVY,"", "7d 95%"),
+    ("52","Views from social",RED,"the weak link", "7d 11 · still minimal"),
+    ("90–165","Availability views / day",TEAL,"", "7d 74–130 / day"),
 ])
 site_channels=chart_card("Traffic by channel",
     hbars([("Organic Search",8379,GREEN),("Direct",6208,NAVY),("Referral",446,TEAL),("Paid Search",179,ORANGE),
@@ -244,7 +313,29 @@ site_partners=card('<h3 class="ctitle">Referral traffic = partnerships</h3><p cl
 s2=section("website","Brand & acquisition",BLUE,
     'Marketing site — <span class="hl" style="background:'+BLUE+'33">ondiem.com</span>',
     "The public-facing site. Mobile-first and built for the professional audience, powered by search and brand — not by social or email.",
-    s2_tiles+'<div class="grid2">'+site_channels+site_pages+'</div>'+'<div class="grid2">'+site_trend+site_mobile+'</div>'+site_partners)
+    s2_tiles+'<div class="grid2">'+site_channels+site_pages+'</div>'+'<div class="grid2">'+site_trend+site_mobile+'</div>'+site_last7+site_partners)
+
+# ============ SECTION 2B: SHORT.IO LINK TRACKING ============
+sh_tiles=tiles([
+    ("1,521","Human clicks",GREEN,"down 21% vs prior 30d"),
+    ("681","Bot / scanner clicks",MUTED,"extrapolated: 2,202 total − 1,521"),
+    ("~748","ADA email link (human est.)",PINK,"~49% of clicks"),
+    ("0","New short links created",NAVY),
+])
+sh_links=chart_card("Top branded links — human clicks (est.)",
+    hbars([("/ada-email",748,PINK),("/* (other)",175,MAUVE),("/ (root)",59,BLUE),("/ada-website",34,TEAL),
+           ("/website",8,GREEN),("/ada-member-advantage",7,PURPLE),("/onDiem-youtube",6,ORANGE)]),
+    "Human figures apply the domain-wide 69% human rate (Short.io reports human vs. bot only at the domain level). The ADA partnership email link (campaign ada_partnership_2025) is ~half of all clicks; links route to varied destinations — ADA, partner pages, YouTube — not only ondiem.com.")
+sh_daily=chart_card("Daily human clicks (est.)",
+    area(short_days_human, short_labels, color=GREEN, hi_idx=[1,8]),
+    "Two email-driven spikes — Jun 24 (~483) and Jul 1 (~252 human) — then a long tail, with no new links created in the window.")
+sh_quality=chart_card("Human vs. automated clicks",
+    donut([("Human clicks",1521,GREEN),("Bots / scanners (extrapolated)",681,MUTED)],"1,521","human"),
+    "Of 2,202 logged clicks, ~31% are non-human and are filtered out of the figures above. The top ‘city’ is Ashburn, VA (628 — an AWS data-center hub), with more from China, the Netherlands and Singapore — typical email security-scanner traffic.")
+s_short=section("links","Link tracking",TEAL,
+    'Branded links — <span class="hl" style="background:'+GREEN+'33">Short.io (ondiem.co)</span>',
+    "Human click performance on onDiem's branded short links — mostly campaign, email and partnership links. Bot/scanner traffic is extrapolated out. Window Jun 23 – Jul 24, 2026.",
+    sh_tiles+'<div class="grid2">'+sh_links+sh_daily+'</div>'+short_last7+sh_quality)
 
 # ============ SECTION 3: PAID SEARCH ============
 s3_tiles=tiles([
@@ -276,10 +367,19 @@ paid_auction=chart_card("Auction insights — competitors bid on your brand",
 paid_device=chart_card("Paid clicks by device",
     donut([("Mobile phones",873,PINK),("Computers",641,NAVY),("Tablets",15,YELLOW)],"57%","mobile"),
     "Mobile takes the larger share of paid spend and clicks; audience is 85% female, ages 25–54.")
+paid_last7=card(
+    '<div class="l7-tag">LAST 7 DAYS · JUL 23–29 &nbsp;·&nbsp; VS 30-DAY WEEKLY PACE</div>'
+    '<h3 class="ctitle" style="margin-top:4px">Most recent week — Google Ads</h3>'
+    '<p class="csub" style="margin-bottom:12px">$307 spend · 362 clicks · 51.1% CTR · $0.85 avg CPC · 0 conversions — clicks and CTR ran slightly ahead of the 30-day weekly pace (~357 clicks/wk, 49.3% CTR). Still the single enabled brand campaign.</p>'
+    + table(["Ad (responsive search)","Strength","Clicks","CTR","Avg CPC","Spend"],
+        [['“onDiem”','Excellent','322','54.3%','$0.81','$261.52'],
+         ['“onDiem, a better way to temp”','Poor','40','34.8%','$1.15','$45.80']],
+        aligns=["left","left","right","right","right","right"], hi_cols=[2])
+    + '<p class="csub" style="margin-top:10px">One ad does the work: the ‘Excellent’-rated ad drives 89% of clicks at a lower CPC, while the ‘Poor’-rated ad costs more per click for far less volume — a clear candidate to rewrite or pause. Final URL now points to hub.ondiem.com; conversion tracking still reads 0.</p>')
 s3=section("paid","Paid media",ORANGE,
     'Paid search — <span class="hl" style="background:'+ORANGE+'33">Google Ads</span>',
     "A lean, brand-protective account. Efficient on brand terms, but pulled back from prospecting and unable to measure conversions.",
-    s3_tiles+paid_kw+'<div class="grid2">'+paid_dow+paid_device+'</div>'+paid_auction)
+    s3_tiles+paid_last7+paid_kw+'<div class="grid2">'+paid_dow+paid_device+'</div>'+paid_auction)
 
 # ============ SECTION 4: SOCIAL ============
 s4_tiles=tiles([
@@ -311,10 +411,31 @@ soc_aud=card('<h3 class="ctitle">Audience — consistent across platforms</h3>'
     '<p class="csub">Predominantly female, ages 25–44, in US dental metros — matching the dental-hygienist ICP. LinkedIn adds a professional overlay.</p>'
     '<div class="tags">'+''.join(f'<span class="tag">{esc(t)}</span>' for t in
     ["84% female","Ages 25–44","NYC","LA / SF Bay","Dallas–Ft. Worth","Phoenix","Portland","Entry + Senior (LI)","IT · BizDev · Sales (LI)"])+'</div>')
+_g=f'<span style="color:{GREEN};font-weight:700">'; _r=f'<span style="color:{RED};font-weight:700">'
+social_last7=card(
+    '<div class="l7-tag">LAST 7 DAYS · JUL 23–29 &nbsp;VS&nbsp; PREVIOUS 7 DAYS · JUL 16–22</div>'
+    '<h3 class="ctitle" style="margin-top:4px">Week-over-week by platform</h3>'
+    '<table class="tbl"><thead><tr>'
+    '<th style="text-align:left">Platform</th>'
+    '<th style="text-align:right">New followers<br><span style="font-weight:400;opacity:.7">this wk</span></th>'
+    '<th style="text-align:right">New followers<br><span style="font-weight:400;opacity:.7">last wk</span></th>'
+    '<th style="text-align:left">Reach &amp; engagement · this wk vs last wk</th>'
+    '</tr></thead><tbody>'
+    f'<tr><td style="text-align:left;font-weight:600">Instagram</td>'
+    f'<td style="text-align:right">{_g}+4</span></td><td style="text-align:right">{_g}+35</span></td>'
+    f'<td style="text-align:left">1,901 views vs 5,522 {_r}▼</span> · 89 interactions vs 159 {_r}▼</span> — post-event drop</td></tr>'
+    f'<tr><td style="text-align:left;font-weight:600">Facebook</td>'
+    f'<td style="text-align:right">{_r}−1</span></td><td style="text-align:right">{_r}−2</span></td>'
+    f'<td style="text-align:left">209 views vs 1,443 {_r}▼</span> · 0 reactions vs 17 — sharp post-event drop</td></tr>'
+    f'<tr><td style="text-align:left;font-weight:600">LinkedIn</td>'
+    f'<td style="text-align:right">{_g}+2</span></td><td style="text-align:right">{_r}−1</span></td>'
+    f'<td style="text-align:left">338 impressions vs 280 {_g}▲</span> · 22 clicks vs 62 {_r}▼</span></td></tr>'
+    '</tbody></table>'
+    '<p class="csub" style="margin-top:10px">All figures are exact for both weeks. The previous week (Jul 16–22) was the RDH Under One Roof event peak, so Instagram and Facebook reach and engagement fell sharply the following week — LinkedIn was the exception, turning follower-positive and lifting impressions.</p>')
 s4=section("social","Owned social",PINK,
     'Social — <span class="hl" style="background:'+PINK+'33">Instagram · Facebook · LinkedIn</span>',
     "The RDH Under One Roof conference powered the period. Each platform plays a distinct role: Instagram for reach, LinkedIn for clicks, Facebook fading.",
-    s4_tiles+'<div class="grid2">'+soc_ct+soc_eng+'</div>'+soc_top+'<div class="grid2">'+soc_comp+soc_aud+'</div>')
+    s4_tiles+social_last7+'<div class="grid2">'+soc_ct+soc_eng+'</div>'+soc_top+'<div class="grid2">'+soc_comp+soc_aud+'</div>')
 
 # ============ SECTION 5: EMAIL & SURVEY ============
 s5_tiles=tiles([
@@ -339,10 +460,24 @@ em_survey=card('<h3 class="ctitle">What practices told the survey</h3>'
          ["Cancellation policy","Polarizing — several strongly negative"],
          ["Overall satisfaction","Mid-scale — room to move to advocates"]],
         aligns=["left","left"]))
+inflight=card(
+    '<div class="l7-tag">2ND FOLLOW-UP · SENT JUL 22 · RESULTS IN</div>'
+    '<h3 class="ctitle" style="margin-top:4px">Follow-up send vs. the first survey email</h3>'
+    '<p class="csub">The resend (“What would make onDiem work better for you?”) applied this report’s recommendations — benefit-led subject, a stated “2-minute” ask, previewed questions — but going to a colder non-opener audience it landed a touch below the original on every engagement measure.</p>'
+    + table(["Metric","1st send","2nd follow-up"],
+        [["Sent / delivered","1,053 / 1,050","961 / 960"],
+         ["Open rate (excl. bots)","18.57%","16.88%"],
+         ["Unique opens","195","162"],
+         ["Click rate (excl. bots)","2.67%","1.67%"],
+         ["Unique clicks","28","16"],
+         ["Click-through (of opens)","14.36%","9.88%"],
+         ["Replies / unsub / spam","0 / 3 / 0","0 / 7 / 1"]],
+        aligns=["left","right","right"], hi_cols=[2])
+    + '<p class="csub" style="margin-top:10px">The <b>mobile CTA gap persists</b>: mobile was 31% of opens but only 13% of clicks, while desktop drove 88% of clicks — the same friction flagged on the first send. Attention was shallow (55.8% “glanced”, 27.6% “read”), and Gmail (50%) + Apple Mail iOS (23%) dominated opens.</p>')
 s5=section("email","Lifecycle",GREEN,
     'Email &amp; survey — <span class="hl" style="background:'+GREEN+'33">Practice First Shift Survey</span>',
     "A single send to 1,053 practices, plus the resulting survey. Solid deliverability, but a mobile CTA gap and a clear message on where practices feel friction.",
-    s5_tiles+'<div class="grid2">'+em_funnel+em_mobile+'</div>'+em_survey)
+    s5_tiles+'<div class="grid2">'+em_funnel+em_mobile+'</div>'+em_survey+inflight)
 
 # ============ SECTION 5B: PROFESSIONAL FIRST-SHIFT FEEDBACK ============
 vp_tiles=tiles([
@@ -439,25 +574,26 @@ take=callout("What this means for next week",[
 
 # ============ ASSEMBLE ============
 nav=('<nav class="toc"><a href="#marketplace">Marketplace</a><a href="#website">Website</a>'
-     '<a href="#paid">Paid</a><a href="#social">Social</a><a href="#email">Email</a>'
+     '<a href="#links">Links</a><a href="#paid">Paid</a><a href="#social">Social</a><a href="#email">Email</a>'
      '<a href="#profeedback">Pro feedback</a><a href="#conversion">Conversion</a><a href="#profiles">Profiles</a></nav>')
 
 header=(f'<header class="masthead"><div class="mh-top"><span class="brand">'
-        f'<span class="brand-mark">◑</span> onDiem</span><span class="period">30-DAY VIEW · JUN 22 – JUL 21, 2026</span></div>'
+        f'<span class="brand-mark">◑</span> onDiem</span><span class="period">MARKETING UPDATE · AS OF JULY 30, 2026</span></div>'
         f'<h1 class="title">Weekly Performance <span class="hl" style="background:{TEAL}44">Report</span></h1>'
-        f'<p class="subtitle">A single view across the marketplace, marketing site, paid search, social, email, event conversion and profile quality. Prepared by Figment Creative.</p>'
+        f'<p class="subtitle">A single view across the marketplace, marketing site, paid search, social, email, event conversion and profile quality. 30-day trends run through Jul 21; the most recent week (Jul 23–29) appears in each <b>Last 7 Days</b> panel. Prepared by Figment Creative.</p>'
         f'{nav}</header>')
 
 body=(header+
       f'<section class="hero"><div class="sec-head">{eyebrow("At a glance", NAVY)}'
-      f'<h2 class="sec-title">The week in six numbers</h2></div>{hero_tiles}</section>'+
-      s1+s2+s3+s4+s5+s5b+s6+s7+
+      f'<h2 class="sec-title">The week in six numbers</h2></div>{hero_tiles}'
+      f'<p class="csub" style="margin-top:2px">Big number = 30-day total. <b>7d</b> = most recent week (Jul 23–29); <b>WoW</b> compares to the prior week where daily data exists (active users, site, social), the rest to the 30-day weekly pace.</p></section>'+
+      s1+s2+s_short+s3+s4+s5+s5b+s6+s7+
       f'<section>{take}</section>'+
-      f'<footer class="foot">onDiem Weekly Performance Report · Reporting window Jun 22 – Jul 21, 2026 (email &amp; profile reports as of Jul 20) · Sources: GA4, Metricool, Google Ads, HubSpot · Internal use</footer>')
+      f'<footer class="foot">onDiem Weekly Performance Report · Prepared July 30, 2026 · 30-day base window Jun 22 – Jul 21 (email &amp; profile reports as of Jul 20); latest week Jul 23–29 shown in the Last 7 Days panels · Sources: GA4, Metricool, Google Ads, Short.io, HubSpot · Internal use</footer>')
 
 CSS=f"""
 *{{box-sizing:border-box;margin:0;padding:0}}
-body{{background:{CREAM};color:{INK};font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;line-height:1.55;-webkit-font-smoothing:antialiased}}
+body{{background:{CREAM};color:{INK};font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;line-height:1.55;-webkit-font-smoothing:antialiased;zoom:1.5}}
 .wrap{{max-width:1120px;margin:0 auto;padding:40px 26px 80px}}
 h1,h2,h3,.t-num,.dnum{{font-family:Georgia,'Times New Roman',serif}}
 .masthead{{margin-bottom:34px}}
@@ -481,6 +617,7 @@ section{{margin-top:52px}}
 .t-num{{font-size:30px;font-weight:700;color:{NAVY};line-height:1.05}}
 .t-lab{{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:{INK};margin-top:6px}}
 .t-sub{{font-size:11.5px;color:{MUTED};margin-top:3px}}
+.t-wow{{font-size:11.5px;font-weight:600;color:{MUTED};margin-top:7px;padding-top:6px;border-top:1px solid {LINE}}}
 .card{{background:#fff;border:1px solid {LINE};border-radius:15px;padding:20px 22px;margin-bottom:16px}}
 .grid2{{display:grid;grid-template-columns:1fr 1fr;gap:16px}}
 .ctitle{{font-size:17px;color:{NAVY};font-weight:700;margin-bottom:3px}}
@@ -511,7 +648,9 @@ section{{margin-top:52px}}
 .fhead{{font-size:11px;font-weight:800;letter-spacing:1px;margin-bottom:10px}}
 .funnel{{display:flex;flex-direction:column;gap:5px}}
 .fstep{{background:{CREAM};border-radius:0 8px 8px 0;padding:9px 14px}}
+.frow{{display:flex;justify-content:space-between;align-items:baseline;gap:10px}}
 .fval{{font-size:20px;font-weight:700;color:{NAVY};font-family:Georgia,serif}}
+.fweek{{font-size:11px;font-weight:700;color:{NAVY};background:#fff;border:1px solid {LINE};border-radius:20px;padding:2px 9px;white-space:nowrap;flex:0 0 auto}}
 .flab{{font-size:12px;color:{MUTED}}}
 .farr{{text-align:center;color:{LINE};font-size:11px;line-height:1}}
 .stepper{{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-top:10px}}
@@ -528,6 +667,25 @@ section{{margin-top:52px}}
 .co-list li{{padding-left:22px;position:relative;font-size:14px;color:#dfe6ee}}
 .co-list li:before{{content:'';position:absolute;left:0;top:8px;width:8px;height:8px;border-radius:50%;background:{TEAL}}}
 .co-list b{{color:#fff}}
+.last7{{display:flex;align-items:center;gap:22px;flex-wrap:wrap;background:#fff;border:1px solid {LINE};border-radius:13px;padding:13px 20px;margin-bottom:16px}}
+.l7-a{{flex:1;min-width:200px}}
+.l7-tag{{font-size:10px;font-weight:800;letter-spacing:1.3px;color:{MUTED}}}
+.l7-val{{font-family:Georgia,serif;font-size:25px;font-weight:700;color:{NAVY};margin-top:3px}}
+.l7-lab{{font-family:-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;font-size:12.5px;font-weight:600;color:{MUTED}}}
+.l7-prev{{font-size:12px;color:{MUTED};margin-top:5px}}
+.l7-prev b{{color:{INK};font-weight:700}}
+.l7-b{{display:flex;flex-direction:column;align-items:flex-start;line-height:1.15}}
+.l7-delta{{font-size:19px;font-weight:800}}
+.l7-vs{{font-size:11px;color:{MUTED}}}
+.l7-c{{flex:0 0 auto;display:flex;flex-direction:column;align-items:flex-start}}
+.l7-leg{{display:flex;gap:4px;align-items:center;font-size:10px;color:{MUTED};margin-top:2px}}
+.l7-leg .sw{{width:10px;height:3px;border-radius:2px;display:inline-block;margin-left:6px}}
+.spark{{width:172px;height:46px;display:block}}
+.fnote{{margin-top:14px;padding-top:12px;border-top:1px solid {LINE};font-size:12px;color:{MUTED};line-height:1.5}}
+.fnote b{{color:{INK}}} .fnote code{{background:{CREAM};border:1px solid {LINE};border-radius:4px;padding:1px 5px;font-size:11px;color:{NAVY}}}
+.inflight{{display:flex;gap:14px;align-items:flex-start;background:{YELLOW}14;border:1px dashed {YELLOW};border-radius:12px;padding:14px 16px;margin-top:16px;font-size:13.5px;color:{INK}}}
+.if-tag{{flex:0 0 auto;background:{YELLOW};color:{NAVY};font-size:10px;font-weight:800;letter-spacing:1px;padding:4px 9px;border-radius:5px;margin-top:1px}}
+.inflight b{{color:{NAVY}}}
 .foot{{margin-top:44px;padding-top:18px;border-top:1px solid {LINE};font-size:11.5px;color:{MUTED};text-align:center}}
 @media(max-width:720px){{.grid2,.twocol{{grid-template-columns:1fr}}.title{{font-size:32px}}.donut{{width:160px;height:160px}}}}
 """

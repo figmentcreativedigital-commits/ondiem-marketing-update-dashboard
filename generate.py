@@ -205,6 +205,34 @@ def updatecard(tag, tagcolor, title, body):
 def note(text):
     return f'<p class="fnote">{text}</p>'
 
+def wowrow(label, weeks, color, fmt=None, caveat=""):
+    """label, list of weekly values (oldest->newest), colour."""
+    if fmt is None: fmt=lambda v:f"{v:,}"
+    cur=weeks[-1]; prev=weeks[-2]
+    d=(cur-prev)/prev*100 if prev else 0
+    arrow="\u25b2" if d>0.05 else ("\u25bc" if d<-0.05 else "\u2014")
+    acol=GREEN if d>0.05 else (RED if d<-0.05 else MUTED)
+    mx=max(weeks) or 1
+    bw=26; gap=7; H=44
+    bars=[]
+    for i,v in enumerate(weeks):
+        h=max(3,(v/mx)*H); x=i*(bw+gap); y=H-h
+        op = 1 if i==len(weeks)-1 else 0.3
+        bars.append(f'<rect x="{x}" y="{y:.1f}" width="{bw}" height="{h:.1f}" rx="3" fill="{color}" opacity="{op}"/>')
+    spark=f'<svg viewBox="0 0 {len(weeks)*(bw+gap)-gap} {H}" class="spark" role="img">{"".join(bars)}</svg>'
+    cav=f'<div class="wow-cav">{caveat}</div>' if caveat else ""
+    return (f'<div class="wowrow"><div class="wow-lab">{esc(label)}{cav}</div>'
+            f'<div class="wow-spark">{spark}</div>'
+            f'<div class="wow-cur">{esc(fmt(cur))}</div>'
+            f'<div class="wow-d" style="color:{acol}">{arrow} {abs(d):.1f}%</div></div>')
+
+def wowcard(title, sub, rows, foot=""):
+    head=('<div class="wowrow wowhead"><div class="wow-lab">Metric</div><div class="wow-spark">'
+          'Jul 9 &middot; Jul 16 &middot; Jul 23 &middot; Jul 30</div>'
+          '<div class="wow-cur">This week</div><div class="wow-d">WoW</div></div>')
+    ft=f'<p class="fnote">{foot}</p>' if foot else ""
+    return card(f'<h3 class="ctitle">{esc(title)}</h3><p class="csub">{esc(sub)}</p>{head}{"".join(rows)}{ft}')
+
 # ================= BUILD =================
 P=[]
 
@@ -237,6 +265,27 @@ hero_tiles=tiles([
     ("15.6K","Instagram views",PURPLE,"81% from non-followers"),
     ("$1,555","Paid search spend",ORANGE,"Google Ads, brand only"),
 ])
+
+# ============ SECTION W: WEEK OVER WEEK ============
+wow_rows=[
+    wowrow("Platform active users",[7880,8287,7750,7736],TEAL,
+           caveat="Sum of daily actives &mdash; counts a pro active on three days three times."),
+    wowrow("Marketing site views",[3255,3338,3266,3209],BLUE),
+    wowrow("Paid search clicks",[378,382,362,384],ORANGE),
+    wowrow("Short.io clicks",[79,78,306,27],GREEN,
+           caveat="Week of Jul 23 contains the 257-click ADA send."),
+    wowrow("AI visibility score",[36.2,41.0,31.4,36.0],PURPLE,fmt=lambda v:f"{v:.1f}",
+           caveat="Weekly snapshots dated Jul 12, 19, 26 and Aug 2."),
+]
+s_wow=section("wow","Momentum",NAVY,
+    'Week over <span class="hl" style="background:'+NAVY+'22">week</span>',
+    "The four weeks inside this reporting window, for the metrics captured as daily series. The lighter bars are prior weeks; the solid bar is the week ending Aug 5.",
+    wowcard("Trailing four weeks","Week ending Jul 15, Jul 22, Jul 29 and Aug 5.",wow_rows,
+        foot="Traffic is flat to slightly down across the platform and the site, and paid clicks recovered 6.1% after two softer weeks. "
+             "Short.io is the only sharp move and it is an artefact: the week of Jul 23 carries a single 257-click ADA email send. "
+             "Measured against the two normal weeks before it, 27 clicks is a real decline of roughly two thirds, not 91%.<br><br>"
+             "<b>Not shown:</b> funnel events, social, email and profile completion arrived as period totals only, so they cannot be split into weeks "
+             "from the current exports. Adding them means pulling those sources at 7-day granularity alongside the 30-day view."))
 
 # ============ SECTION 0: UPDATES ============
 u1=updatecard("In progress",YELLOW,"Partner site widget",
@@ -567,7 +616,7 @@ take=callout("What this means for next period",[
 
 
 # ============ ASSEMBLE ============
-nav=('<nav class="toc"><a href="#updates">Updates</a><a href="#marketplace">Marketplace</a><a href="#website">Website</a>'
+nav=('<nav class="toc"><a href="#wow">Week over week</a><a href="#updates">Updates</a><a href="#marketplace">Marketplace</a><a href="#website">Website</a>'
      '<a href="#paid">Paid</a><a href="#aeo">AI visibility</a><a href="#social">Social</a>'
      '<a href="#links">Links</a><a href="#email">Email</a><a href="#profiles">Profiles</a></nav>')
 
@@ -580,7 +629,7 @@ header=(f'<header class="masthead"><div class="mh-top"><span class="brand">'
 body=(header+
       f'<section class="hero"><div class="sec-head">{eyebrow("At a glance", NAVY)}'
       f'<h2 class="sec-title">The period in six numbers</h2></div>{hero_tiles}</section>'+
-      s0+s1+s2+s3+s4+s5+s6+s7+s8+
+      s_wow+s0+s1+s2+s3+s4+s5+s6+s7+s8+
       f'<section>{take}</section>'+
       f'<footer class="foot">onDiem Marketing Performance Report &middot; Reporting window Jul 7 &ndash; Aug 5, 2026 &middot; AI visibility measured Jun 29 &ndash; Aug 6 &middot; Sources: GA4, Metricool, Google Ads, Short.io, HubSpot &middot; Internal use</footer>')
 
@@ -668,6 +717,15 @@ section{{margin-top:52px}}
 .upd-title{{font-size:18px;color:{NAVY};font-weight:700;margin-bottom:8px}}
 .upd-body{{font-size:13.5px;color:{MUTED};line-height:1.6}}
 .upd-body b{{color:{INK}}}
+.wowrow{{display:grid;grid-template-columns:1.5fr 1fr .7fr .6fr;gap:14px;align-items:center;padding:13px 0;border-bottom:1px solid {LINE}}}
+.wowrow:last-child{{border-bottom:none}}
+.wowhead{{font-size:10.5px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:{MUTED};padding-bottom:9px}}
+.wow-lab{{font-size:13.5px;font-weight:600;color:{NAVY}}}
+.wow-cav{{font-size:11px;font-weight:400;color:{MUTED};margin-top:3px;line-height:1.4}}
+.spark{{width:100%;max-width:150px;height:44px;display:block}}
+.wow-cur{{font-family:Georgia,serif;font-size:20px;font-weight:700;color:{NAVY};text-align:right}}
+.wow-d{{font-size:13px;font-weight:700;text-align:right}}
+@media(max-width:600px){{.wowrow{{grid-template-columns:1fr .6fr .5fr}}.wow-spark{{display:none}}.wowhead .wow-spark{{display:none}}}}
 .foot{{margin-top:44px;padding-top:18px;border-top:1px solid {LINE};font-size:11.5px;color:{MUTED};text-align:center}}
 @media(max-width:720px){{.grid2,.twocol{{grid-template-columns:1fr}}.title{{font-size:32px}}.donut{{width:160px;height:160px}}}}
 """

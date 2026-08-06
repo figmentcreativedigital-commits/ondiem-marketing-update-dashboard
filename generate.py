@@ -239,10 +239,10 @@ hero_tiles=tiles([
 ])
 
 # ============ SECTION 0: UPDATES ============
-u1=updatecard("Live",TEAL,"Partner site widget",
-    "Logan and Darya shipped the partner availability widget. It detects any non-ondiem.com domain and renders "
-    "<b>&ldquo;Find staff ready to work, powered by onDiem.&rdquo;</b> Scope was kept narrow to ship quickly; messaging can expand later. "
-    "Live after the window closed, so there is no performance data this period.")
+u1=updatecard("In progress",YELLOW,"Partner site widget",
+    "Logan and Darya have built the partner availability widget. It detects any non-ondiem.com domain and renders "
+    "<b>&ldquo;Find staff ready to work, powered by onDiem.&rdquo;</b> Scope was kept narrow to move quickly; messaging can expand later. "
+    "Preview and documentation are circulating. No performance data this period.")
 u2=updatecard("In market",ORANGE,"August $50 gift-card promo",
     "Six city-targeted sends went out Aug 5 to <b>701 practices</b> in Portland, Minneapolis, Chicago, Atlanta, Houston and Miami. "
     "Practices earn a $50 gift card per shift posted and worked through Aug 31. "

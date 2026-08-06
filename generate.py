@@ -12,16 +12,11 @@ def esc(s): return html.escape(str(s))
 def eyebrow(text, color=ORANGE):
     return f'<span class="eyebrow" style="background:{color}22;color:{color}">{esc(text)}</span>'
 
-def tile(num, label, accent=TEAL, sub="", wow=""):
+def tile(num, label, accent=TEAL, sub=""):
     subhtml=f'<div class="t-sub">{esc(sub)}</div>' if sub else ""
-    wowhtml=f'<div class="t-wow">{wow}</div>' if wow else ""
     return (f'<div class="tile" style="border-top:3px solid {accent}">'
             f'<div class="t-num">{esc(num)}</div>'
-            f'<div class="t-lab">{esc(label)}</div>{subhtml}{wowhtml}</div>')
-
-def wow_html(seven, delta_pct, kind='WoW'):
-    up = delta_pct>=0; col = GREEN if up else RED; sign='▲' if up else '▼'
-    return f'{esc(seven)} · <span style="color:{col};font-weight:700">{sign}{abs(delta_pct):.0f}%</span> {kind}'
+            f'<div class="t-lab">{esc(label)}</div>{subhtml}</div>')
 
 def tiles(items):
     return '<div class="tiles">'+''.join(tile(*i) for i in items)+'</div>'
@@ -106,42 +101,6 @@ def donut(segments, center_num="", center_lab=""):
     return (f'<div class="donutwrap"><svg viewBox="0 0 240 240" class="donut" role="img">{"".join(rows)}</svg>'
             f'<div class="legend">{"".join(leg)}</div></div>')
 
-def sparkline(vals, color, w=160, h=42):
-    maxv=max(vals) or 1; n=len(vals)
-    if n<2: return ""
-    pts=[(3+i/(n-1)*(w-6), h-6-(v/maxv)*(h-14)) for i,v in enumerate(vals)]
-    line=" ".join(f"{x:.1f},{y:.1f}" for x,y in pts)
-    base=h-4
-    fill=f"M{pts[0][0]:.1f},{base:.1f} "+" ".join(f"L{x:.1f},{y:.1f}" for x,y in pts)+f" L{pts[-1][0]:.1f},{base:.1f} Z"
-    return (f'<svg viewBox="0 0 {w} {h}" class="spark">'
-            f'<path d="{fill}" fill="{color}1e"/>'
-            f'<polyline points="{line}" fill="none" stroke="{color}" stroke-width="2" stroke-linejoin="round"/>'
-            f'<circle cx="{pts[-1][0]:.1f}" cy="{pts[-1][1]:.1f}" r="2.6" fill="{color}"/></svg>')
-
-def compare_spark(cur, prev, color, w=172, h=46):
-    n=len(cur); maxv=max(cur+prev) or 1
-    def mk(vals): return [(3+i/(n-1)*(w-6), h-6-(v/maxv)*(h-14)) for i,v in enumerate(vals)]
-    cp=mk(cur); pp=mk(prev)
-    cl=" ".join(f"{x:.1f},{y:.1f}" for x,y in cp)
-    pl=" ".join(f"{x:.1f},{y:.1f}" for x,y in pp)
-    return (f'<svg viewBox="0 0 {w} {h}" class="spark">'
-            f'<polyline points="{pl}" fill="none" stroke="{MUTED}" stroke-width="1.6" stroke-dasharray="3 2" opacity="0.75"/>'
-            f'<polyline points="{cl}" fill="none" stroke="{color}" stroke-width="2.2" stroke-linejoin="round"/>'
-            f'<circle cx="{cp[-1][0]:.1f}" cy="{cp[-1][1]:.1f}" r="2.6" fill="{color}"/></svg>')
-
-def last7(rng, prng, cur, prev, unit, cur_s, prev_s, color):
-    delta=((cur-prev)/prev*100) if prev else 0.0
-    up=delta>=0; sign="▲" if up else "▼"; dc=GREEN if up else RED
-    return (f'<div class="last7" style="border-left:4px solid {color}">'
-            f'<div class="l7-a"><div class="l7-tag">LAST 7 DAYS · {esc(rng)}</div>'
-            f'<div class="l7-val">{cur:,} <span class="l7-lab">{esc(unit)}</span></div>'
-            f'<div class="l7-prev">Previous 7 days ({esc(prng)}): <b>{prev:,}</b></div></div>'
-            f'<div class="l7-b"><span class="l7-delta" style="color:{dc}">{sign} {abs(delta):.0f}%</span>'
-            f'<span class="l7-vs">week over week</span></div>'
-            f'<div class="l7-c">{compare_spark(cur_s, prev_s, color)}'
-            f'<div class="l7-leg"><span class="sw" style="background:{color}"></span>this wk'
-            f'<span class="sw" style="background:{MUTED}"></span>prev wk</div></div></div>')
-
 def table(headers, rows, aligns=None, hi_cols=None, hi_color=PINK):
     hi_cols=hi_cols or []
     aligns=aligns or ["left"]+["right"]*(len(headers)-1)
@@ -164,13 +123,10 @@ def stepper(steps):
     return '<div class="stepper">'+''.join(items)+'</div>'
 
 def funnel(steps):
-    # steps: (label, value, color[, week7]) rendered as descending stat blocks
+    # steps: (label, value, color) rendered as descending stat blocks
     out=[]
-    for i,step in enumerate(steps):
-        lab,val,col = step[0],step[1],step[2]
-        wk = step[3] if len(step)>3 else None
-        badge = f'<span class="fweek">7d&nbsp;{esc(wk)}</span>' if wk else ''
-        out.append(f'<div class="fstep" style="border-left:4px solid {col}"><div class="frow"><div class="fval">{esc(val)}</div>{badge}</div><div class="flab">{esc(lab)}</div></div>')
+    for i,(lab,val,col) in enumerate(steps):
+        out.append(f'<div class="fstep" style="border-left:4px solid {col}"><div class="fval">{esc(val)}</div><div class="flab">{esc(lab)}</div></div>')
         if i<len(steps)-1: out.append('<div class="farr">▼</div>')
     return '<div class="funnel">'+''.join(out)+'</div>'
 
@@ -194,70 +150,135 @@ def section(id_, eb_text, eb_color, title_html, lede, body):
             f'<div class="sec-head">{eyebrow(eb_text, eb_color)}<h2 class="sec-title">{title_html}</h2>'
             f'<p class="lede">{lede}</p></div>{body}</section>')
 
+
+# ---------- additional components ----------
+def mline(series, labels, maxv=None, hi=None):
+    """series: list of (name, [values], color). hi = name to emphasise."""
+    W=680; H=250; pad_l=40; pad_b=42; plot_h=H-pad_b-20; plot_w=W-pad_l-16
+    if maxv is None: maxv=max(max(v) for _,v,_ in series)
+    n=len(series[0][1])
+    def X(i): return pad_l+(i/(n-1))*plot_w
+    def Y(v): return 20+plot_h-(v/maxv)*plot_h
+    rows=[]
+    for g in range(0,5):
+        gy=20+plot_h-(g/4)*plot_h; gval=maxv*g/4
+        rows.append(f'<line x1="{pad_l}" y1="{gy:.1f}" x2="{W-16}" y2="{gy:.1f}" stroke="{LINE}"/>')
+        rows.append(f'<text x="{pad_l-8}" y="{gy+4:.1f}" text-anchor="end" class="ax">{gval:,.0f}</text>')
+    for name,vals,col in series:
+        emph = (hi is None or name==hi)
+        pts=" ".join(f"{X(i):.1f},{Y(v):.1f}" for i,v in enumerate(vals))
+        sw = 3.2 if emph else 1.6
+        op = 1 if emph else 0.45
+        rows.append(f'<polyline points="{pts}" fill="none" stroke="{col}" stroke-width="{sw}" opacity="{op}" stroke-linejoin="round"/>')
+        if emph:
+            for i,v in enumerate(vals):
+                rows.append(f'<circle cx="{X(i):.1f}" cy="{Y(v):.1f}" r="3.2" fill="{col}"/>')
+    step=max(1,n//6)
+    for i in range(0,n,step):
+        rows.append(f'<text x="{X(i):.1f}" y="{H-14:.1f}" text-anchor="middle" class="ax2">{esc(labels[i])}</text>')
+    leg="".join(f'<span class="il"><span class="dot" style="background:{c}"></span>{esc(nm)}</span>' for nm,_,c in series)
+    return (f'<svg viewBox="0 0 {W} {H}" class="chart" role="img">{"".join(rows)}</svg>'
+            f'<div class="ilegend">{leg}</div>')
+
+def pairbars(items, unit="", fmt=None):
+    """items: (label, start_value, end_value, color) — shows movement start -> end."""
+    if fmt is None: fmt=lambda v:f"{v:.1f}"
+    maxv=max(max(a,b) for _,a,b,_ in items) or 1
+    W=680; labw=150; barw=W-labw-120; hp=42; H=len(items)*hp+10
+    rows=[]
+    for i,(lab,a,b,col) in enumerate(items):
+        y=i*hp+8
+        wa=max(2,(a/maxv)*barw); wb=max(2,(b/maxv)*barw)
+        rows.append(f'<text x="{labw-10}" y="{y+21}" text-anchor="end" class="bl">{esc(lab)}</text>')
+        rows.append(f'<rect x="{labw}" y="{y+2}" width="{wa:.1f}" height="13" rx="4" fill="{col}" opacity="0.32"/>')
+        rows.append(f'<rect x="{labw}" y="{y+18}" width="{wb:.1f}" height="13" rx="4" fill="{col}"/>')
+        arrow="▲" if b>a else ("▼" if b<a else "—")
+        acol=GREEN if b>a else (RED if b<a else MUTED)
+        rows.append(f'<text x="{labw+max(wa,wb)+9:.1f}" y="{y+21}" class="bv">{esc(fmt(a))}{esc(unit)} → {esc(fmt(b))}{esc(unit)}</text>')
+        rows.append(f'<text x="{W-14}" y="{y+21}" text-anchor="end" class="bv" fill="{acol}">{arrow}</text>')
+    return f'<svg viewBox="0 0 {W} {H}" class="chart" role="img">{"".join(rows)}</svg>'
+
+def updatecard(tag, tagcolor, title, body):
+    return (f'<div class="upd"><div class="upd-tag" style="background:{tagcolor}1f;color:{tagcolor}">{esc(tag)}</div>'
+            f'<h3 class="upd-title">{esc(title)}</h3><p class="upd-body">{body}</p></div>')
+
+def note(text):
+    return f'<p class="fnote">{text}</p>'
+
 # ================= BUILD =================
 P=[]
 
-# ---- daily platform active users (Time_series4) ----
-plat_days=[5158,988,1040,991,699,249,412,4020,834,802,845,411,191,331,4012,890,799,844,580,263,345,3852,1067,929,873,593,250,281,4123,1203]
-day_labels=["Jun 22","","","Jun 25","","","Jun 28","","","Jul 1","","","Jul 4","","","Jul 7","","","Jul 10","","","Jul 13","","","Jul 16","","","Jul 19","","Jul 21"]
-mondays=[0,7,14,21,28]
+# ---- daily platform active users (Jul 7 - Aug 5) ----
+plat_days=[890,799,844,580,263,345,3852,1067,929,873,593,250,281,4123,1211,
+           956,913,581,267,347,3877,928,837,914,560,289,297,3722,997,957]
+day_labels=["Jul 7","","","Jul 10","","","Jul 13","","","Jul 16","","","Jul 19","","",
+            "Jul 22","","","Jul 25","","","Jul 28","","","Jul 31","","","Aug 3","","Aug 5"]
+mondays=[6,13,20,27]
 
-# ---- marketing site daily totals ----
-site_days=[578,613,502,503,448,202,313,596,481,469,364,261,158,288,508,418,390,423,256,199,306,489,384,381,395,287,169,197,401,427]
+# ---- marketing site daily views ----
+site_days=[613,513,511,404,240,341,633,600,526,531,386,231,280,624,660,
+           626,576,387,270,355,617,555,506,559,380,247,290,596,578,559]
 
-# ---- Short.io daily clicks (Jun 23 - Jul 23) ----
-short_days=[22,700,50,8,11,51,46,9,365,34,6,13,6,10,3,9,12,41,7,8,5,1,5,12,8,3,16,25,14,3,0]
-_sd=[("Jun",d) for d in range(23,31)]+[("Jul",d) for d in range(1,24)]
-short_labels=[f"{m} {d}" for m,d in _sd]
-# Short.io reports human vs bot only at the domain level (1,521 human of 2,202 = 69.1%).
-# Extrapolate per-day human clicks at that rate.
-_HR=1521/2202
-short_days_human=[round(v*_HR) for v in short_days]
+# ---- paid search daily clicks ----
+paid_days=[99,62,51,43,20,25,90,73,76,66,27,17,23,84,85,
+           80,51,40,27,36,89,68,51,68,36,24,16,79,77,84]
 
-# ---- last-7-day summaries (only where daily data exists) ----
-def d7(a): return sum(a[-7:]), sum(a[-14:-7]), a[-7:], a[-14:-7]
-# Real last-7-day exports (Jul 23–29) vs the prior week (Jul 15–21) from the 30-day daily series.
-plat_cur=[913,581,267,347,3877,928,831]      # app.ondiem.com daily active users, Jul 23–29
-plat_prev=[873,593,250,281,4123,1211,956]    # Jul 16–22 (from 14-day series, contiguous)
-site_cur=[331,234,172,197,342,313,318]       # ondiem.com daily page-view visitors, Jul 23–29
-site_prev=[322,243,137,157,336,381,365]      # Jul 16–22 (contiguous prior week, from 14-day actions export)
-short_cur_h=[0,0,259,17,9,5,5]     # Short.io daily HUMAN clicks Jul 23–29 (real; Jul 25 = ADA email send)
-short_prev_h=[8,6,2,11,17,10,2]    # Jul 16–22 human (est. prior-week tail)
-plat_last7=last7("Jul 23–29","Jul 16–22", sum(plat_cur), sum(plat_prev), "active users", plat_cur, plat_prev, TEAL)
-site_last7=last7("Jul 23–29","Jul 16–22", sum(site_cur), sum(site_prev), "visitors", site_cur, site_prev, BLUE)
-short_last7=last7("Jul 23–29","Jul 16–22", sum(short_cur_h), sum(short_prev_h), "human clicks", short_cur_h, short_prev_h, GREEN)
+# ---- Short.io daily clicks (Jul 7 - Aug 5) ----
+short_days=[3,9,12,41,7,8,5,1,5,12,8,3,16,25,14,0,0,257,15,13,5,4,12,4,3,5,7,3,2,3]
+_HR=512/949   # domain-level human-click rate for the export period
+short_human=[round(v*_HR) for v in short_days]
 
 # ============ HERO ============
 hero_tiles=tiles([
-    ("29,862","Platform active users",TEAL,"app.ondiem.com · 30 days", wow_html("7d 7,744", -7, "WoW")),
-    ("1,294","Shift confirmations",GREEN,"GA4 events · 30 days", wow_html("7d 327", 16, "WoW")),
-    ("567","New pros signed up",PINK,"signups · 30 days", wow_html("7d 128", -3, "vs pace")),
-    ("15,288","Marketing site views",BLUE,"ondiem.com · 30 days", wow_html("7d 1,907", -2, "WoW")),
-    ("8,872","Total social followers",PURPLE,"IG + FB + LinkedIn", f'7d <span style="color:{GREEN};font-weight:700">+5</span> net · vs +32 last wk'),
-    ("$1,523","Paid search spend",ORANGE,"Google Ads · 30 days", wow_html("7d $307", -13, "vs pace")),
+    ("24,936","Platform active users",TEAL,"app.ondiem.com · 30 days"),
+    ("15","Shifts booked on promo",GREEN,"gift-card mailer, confirmed"),
+    ("591","New pros registered",PINK,"signup completed"),
+    ("14,657","Marketing site views",BLUE,"ondiem.com"),
+    ("15.6K","Instagram views",PURPLE,"81% from non-followers"),
+    ("$1,555","Paid search spend",ORANGE,"Google Ads, brand only"),
 ])
+
+# ============ SECTION 0: UPDATES ============
+u1=updatecard("Live",TEAL,"Partner site widget",
+    "Logan and Darya shipped the partner availability widget. It detects any non-ondiem.com domain and renders "
+    "<b>&ldquo;Find staff ready to work, powered by onDiem.&rdquo;</b> Scope was kept narrow to ship quickly; messaging can expand later. "
+    "Live after the window closed, so there is no performance data this period.")
+u2=updatecard("In market",ORANGE,"August $50 gift-card promo",
+    "Six city-targeted sends went out Aug 5 to <b>701 practices</b> in Portland, Minneapolis, Chicago, Atlanta, Houston and Miami. "
+    "Practices earn a $50 gift card per shift posted and worked through Aug 31. "
+    "The offer redeems on a promo code entered at shift creation, so clicks understate response — redemption is the measure.")
+u3=updatecard("Working",GREEN,"Google review automation",
+    "A happy CSAT response now triggers an automated review request. Reviews moved from <b>9 at 3.7</b> to <b>16 at 4.3</b> in about two months, "
+    "after roughly a year with none. The request has been extended from live chat to email tickets. "
+    "The app store listing sits separately at 5 reviews and 1.8.")
+s0=section("updates","What shipped",NAVY,
+    'Updates <span class="hl" style="background:'+NAVY+'22">this period</span>',
+    "Three items landed at or just after the close of the window. None carry performance data yet; each is noted here so next period&rsquo;s numbers have context.",
+    '<div class="updgrid">'+u1+u2+u3+'</div>')
 
 # ============ SECTION 1: MARKETPLACE ============
 s1_tiles=tiles([
-    ("29,862","Active users",TEAL,"", wow_html("7d 7,744", -7, "WoW")),
-    ("290K","Page views",NAVY,"", wow_html("7d 64.3K", -9, "WoW")),
-    ("2,844","Pros signed in",PINK,"", "7d 839 this wk"),
-    ("1,406","Practices signed in",BLUE,"", "7d 557 this wk"),
-    ("1,294","Shift confirmations",GREEN,"GA4 events", wow_html("7d 327", 16, "WoW")),
+    ("24,936","Active users",TEAL,"4 Mondays this window"),
+    ("285K","Page views",NAVY),
+    ("2,815","Pros signed in",PINK),
+    ("1,415","Practices signed in",BLUE),
+    ("15","Shifts booked on promo",GREEN,"confirmed timecards"),
 ])
-plat_area=chart_card("Daily active users — the weekly Monday spike",
+plat_area=chart_card("Daily active users — the Monday cycle holds",
     area(plat_days, day_labels, color=TEAL, hi_idx=mondays),
-    "Active users surge to 3,800–5,200 every Monday (▲ marked), then fall midweek and into the weekend (Jul 4 low = 191). The marketplace runs on a weekly shift-posting cycle.")
+    "Every Monday clears 3,700 (marked) against a 250–1,200 baseline. The marketplace still runs on a weekly shift-posting rhythm. "
+    "This window contains four Mondays; the previous window contained five, which accounts for part of the period-over-period change in active users.")
 plat_practice=funnel([
-    ("Listings created — by 627 practices","2,641",TEAL,"559"),
-    ("Shift-creation flows started","1,721",TEAL,"334"),
-    ("Shift offers sent to pros (largely automated)","142,674",TEAL,"33,606"),
-    ("Shift confirmations (GA4 event)","1,294",GREEN,"327"),
+    ("Listings created — by 649 practices","2,723",TEAL),
+    ("Shift-creation flows started","1,766",TEAL),
+    ("Shift offers sent to pros (largely automated)","175,371",TEAL),
+    ("Shift confirmations (GA4 event)","1,362",GREEN),
 ])
 plat_pro=funnel([
-    ("Job searches — by 3,153 pros","9,643",PINK,"1,990"),
-    ("Shifts viewed — by 6,692 pros","15,979",PINK,"3,032"),
-    ("Shift requests submitted — by 370 pros","2,766",PINK,"621"),
+    ("Job searches — by 3,046 pros","9,424",PINK),
+    ("Shifts viewed — by 6,180 pros","15,601",PINK),
+    ("Shift requests submitted — by 365 pros","2,960",PINK),
+    ("Offers accepted — by 143 pros","300",GREEN),
 ])
 plat_funnels=card(
     '<h3 class="ctitle">Two-sided marketplace funnel</h3>'
@@ -265,335 +286,307 @@ plat_funnels=card(
     f'<div><div class="fhead" style="color:{TEAL}">PRACTICE SIDE — posting &amp; booking</div>{plat_practice}</div>'
     f'<div><div class="fhead" style="color:{PINK}">PROFESSIONAL SIDE — finding work</div>{plat_pro}</div>'
     '</div>'
-    '<p class="fnote">Big number = 30-day total (Jun 22–Jul 21); the <b>7d</b> badge is the most recent week (Jul 23–29). '
-    'This week tracked close to the 30-day weekly pace (≈ a seventh of each total) — shift offers and confirmations on pace, job searches and views a touch below. '
-    'Figures are GA4 <b>event counts</b>, not verified database bookings: ‘Shift confirmations’ (<code>temp_shift_confirmed</code>) fired from just a few practice-admin/automated accounts, so they indicate activity volume rather than unique completed shifts.</p>')
-plat_device=chart_card("Device — desktop-first",
-    donut([("Desktop",22257,NAVY),("Mobile",7549,PINK),("Tablet",56,YELLOW)],"75%","desktop"),
-    "The opposite of the marketing site: practice staff and admins work at the front desk on Windows/desktop.")
+    '<p class="fnote">These are GA4 <b>event counts</b>, not verified bookings. <code>temp_shift_confirmed</code> fired 1,362&times; from '
+    '<b>22 accounts</b> and <code>temp_shift_offered</code> 175,371&times; from <b>56</b> — both driven by a small number of practice-admin or automated '
+    'senders. <code>professional_accepted_offer</code> (300 events, 143 distinct pros) is the closest GA4 signal to a pro actually taking work.</p>')
+
+promo_tbl=table(
+    ["Market","Practices in log","Shifts booked"],
+    [["Portland / Oregon metro","6","10"],
+     ["Minneapolis / Twin Cities","2","5"],
+     ["Total","8","15"]],
+    hi_cols=[2], hi_color=GREEN)
+promo=card('<h3 class="ctitle">The one closed loop: spend to filled shift</h3>'
+    '<p class="csub">The May/June physical gift-card mailer produced 15 confirmed shifts, tracked from promo code through approved timecard. '
+    'It is the only place in this report where marketing spend connects to a filled shift.</p>'
+    +promo_tbl+
+    '<p class="fnote">Volume came from <b>repeat behaviour, not new practices</b>. Roughly eight practices produced all fifteen shifts — '
+    'Metro Dentalcare appears five times, Weber and South Hillsboro three each. On the pro side one hygienist worked four of them. '
+    'These practices already had accounts; the incentive moved them from registered to posting, and once posting they continued. '
+    'Three further shifts await timecard approval and one fell outside the July cutoff.</p>')
+
+plat_device=chart_card("Device — still desktop-first, but less so",
+    donut([("Desktop",17462,NAVY),("Mobile",7424,PINK),("Tablet",50,YELLOW)],"70%","desktop"),
+    "Desktop fell from 75% to 70% and mobile rose to 29.8%. Practice staff still work at the front desk, but more of the traffic now arrives on a phone.")
 plat_sources=chart_card("How users reach the platform",
-    hbars([("Direct (logged-in)",63.0,NAVY),("Google — paid (CPC)",14.8,ORANGE),("Internal navigation",11.6,TEAL),("Google — organic",4.0,GREEN),("Email + SMS re-engagement",2.5,PINK)],
-          maxv=70, unit="%", fmt=lambda v:f"{v:g}"),
-    "63% is returning logged-in traffic. Paid search matters far more here than on the marketing site.")
+    hbars([("Direct (logged-in)",57.2,NAVY),("Google — paid (CPC)",16.5,ORANGE),("Internal navigation",13.9,TEAL),
+           ("Google — organic",4.2,GREEN),("Email + SMS re-engagement",2.0,PINK)],
+          maxv=65, unit="%", fmt=lambda v:f"{v:g}"),
+    "Direct traffic fell from 63% to 57.2%. Paid rose to 16.5% — but see the note below on how that share is counted.")
 plat_pages=chart_card("Most-used pages",
-    hbars([("/login",20779,NAVY),("/results",17332,PINK),("/search",13889,TEAL),("/my-jobs",12285,BLUE),
-           ("/timesheets",8244,GREEN),("/dashboard",8142,PURPLE),("/employee-portal",6263,ORANGE),("/registration",4129,MAUVE)],
+    hbars([("/login",21561,NAVY),("/results",17361,PINK),("/search",13719,TEAL),("/my-jobs",13064,BLUE),
+           ("/timesheets",9590,GREEN),("/dashboard",8523,PURPLE),("/employee-portal",6350,ORANGE),("/registration",4212,MAUVE)],
           fmt=lambda v:f"{v:,}"),
-    "Job discovery (results/search), My-Jobs, Timesheets and per-practice booking calendars carry the volume.")
+    "Job discovery, My Jobs and Timesheets carry the volume. Internal admin pages are excluded — /administrator drew 4,611 views from 24 staff accounts.")
 s1=section("marketplace","The core product",TEAL,
     'Marketplace — <span class="hl" style="background:'+TEAL+'33">app.ondiem.com</span>',
-    "Where practices post shifts and professionals get booked. Desktop-first, sticky (1–13% bounce on logged-in pages), and driven by a strong weekly rhythm.",
-    s1_tiles+plat_area+plat_last7+plat_funnels+'<div class="grid2">'+plat_device+plat_sources+'</div>'+plat_pages)
+    "Where practices post shifts and professionals get booked. The weekly rhythm is unchanged. What moved this period is the device mix and where the traffic is credited.",
+    s1_tiles+plat_area+plat_funnels+promo+'<div class="grid2">'+plat_device+plat_sources+'</div>'+plat_pages)
 
 # ============ SECTION 2: MARKETING SITE ============
 s2_tiles=tiles([
-    ("15,288","Page views",BLUE,"", wow_html("7d 1,907 visitors", -2, "WoW")),
-    ("96%","Organic + direct",NAVY,"", "7d 95%"),
-    ("52","Views from social",RED,"the weak link", "7d 11 · still minimal"),
-    ("90–165","Availability views / day",TEAL,"", "7d 74–130 / day"),
+    ("14,657","Page views",BLUE),
+    ("94.7%","Organic + direct",NAVY),
+    ("46","Views from social",RED,"from 51 posts"),
+    ("5","Form submissions",RED,"from 230 starts"),
 ])
 site_channels=chart_card("Traffic by channel",
-    hbars([("Organic Search",8379,GREEN),("Direct",6208,NAVY),("Referral",446,TEAL),("Paid Search",179,ORANGE),
-           ("Organic Social",52,PINK),("Email",12,PURPLE),("AI Assistant (ChatGPT)",7,BLUE)]),
-    "SEO and brand/direct carry 96% of traffic. The active social + email programs send almost no one to the site.")
+    hbars([("Organic Search",8017,GREEN),("Direct",5868,NAVY),("Referral",521,TEAL),("Paid Search",183,ORANGE),
+           ("Organic Social",46,PINK),("Email",12,PURPLE),("AI Assistant",7,BLUE)]),
+    "Search and direct carry 94.7% of traffic. Paid is small here because the ads point at hub.ondiem.com, not this site.")
 site_pages=chart_card("Top pages",
-    hbars([("Home /",9686,NAVY),("/professionals",3123,PINK),("/practices",516,TEAL),("/ondiem-darby",317,GREEN),
-           ("/ada",304,PURPLE),("/contact-us",252,ORANGE)]),
-    "Home and the professional (job-seeker) page are ~84% of views; /practices is smaller but far more engaged (~148s sessions).")
+    hbars([("Home /",9590,NAVY),("/professionals",3070,PINK),("/practices",501,TEAL),("/ondiem-darby",381,GREEN),
+           ("/contact-us",232,ORANGE),("/ada",162,PURPLE)]),
+    "Home and the professional page are 86% of views. /practices is far smaller but far more engaged.")
 site_trend=chart_card("Daily traffic",
     area(site_days, day_labels, color=BLUE),
-    "Clean weekday pattern with weekend / holiday dips (Jul 4 lowest).")
+    "A clean weekday pattern with weekend dips. Absolute daily values are not comparable to last period — that export captured roughly 75% of pages per day against 97% here.")
 site_mobile=chart_card("Mobile vs desktop by page",
-    vbars([("Home\nmobile",5624,PINK),("Home\ndesktop",4007,BLUE),("Pros\nmobile",2690,PINK),("Pros\ndesktop",394,BLUE)],
+    vbars([("Home\nmobile",5607,PINK),("Home\ndesktop",3944,BLUE),("Pros\nmobile",2617,PINK),("Pros\ndesktop",428,BLUE)],
           fmt=lambda v:f"{v:,}"),
-    "Professionals are overwhelmingly mobile (~7:1); practices skew desktop.")
+    "Professionals arrive on mobile at roughly 6:1. The site is 60.7% mobile — the mirror image of the platform.")
+
+form_call=card('<h3 class="ctitle" style="color:'+RED+'">230 form starts. 5 submissions.</h3>'
+    '<p class="csub">The site&rsquo;s only direct conversion action completes at roughly 2%.</p>'
+    +funnel([("Began a form on ondiem.com","230",BLUE),("Completed and submitted","5",RED)])+
+    '<p class="fnote">This is a known defect, not a new finding. Form errors on ondiem.com and ondiem.com/darby have been an open item in the '
+    'Figment&ndash;onDiem working notes since July; the pro app currently takes engineering priority and the fix is logged in Jira for later pickup. '
+    'For context, <code>pro_availability_view</code> drew <b>2,510 users</b> across the same period. The site engages people. The handoff is where it stops.</p>')
+
 site_partners=card('<h3 class="ctitle">Referral traffic = partnerships</h3><p class="csub">The referral channel is almost entirely dental partners and associations.</p>'
     '<div class="tags">'+''.join(f'<span class="tag">{esc(t)}</span>' for t in
-    ["Darby Dental","CDHA","ADA Business","AADOM","BroadcastMed","MDA Programs","RDH UOR"])+'</div>')
+    ["Darby Dental","CDHA","ADA Business","AADOM","BroadcastMed","MDA Programs","Sonrava Health"])+'</div>')
 s2=section("website","Brand & acquisition",BLUE,
     'Marketing site — <span class="hl" style="background:'+BLUE+'33">ondiem.com</span>',
-    "The public-facing site. Mobile-first and built for the professional audience, powered by search and brand — not by social or email.",
-    s2_tiles+'<div class="grid2">'+site_channels+site_pages+'</div>'+'<div class="grid2">'+site_trend+site_mobile+'</div>'+site_last7+site_partners)
-
-# ============ SECTION 2B: SHORT.IO LINK TRACKING ============
-sh_tiles=tiles([
-    ("1,521","Human clicks",GREEN,"down 21% vs prior 30d"),
-    ("681","Bot / scanner clicks",MUTED,"extrapolated: 2,202 total − 1,521"),
-    ("~748","ADA email link (human est.)",PINK,"~49% of clicks"),
-    ("0","New short links created",NAVY),
-])
-sh_links=chart_card("Top branded links — human clicks (est.)",
-    hbars([("/ada-email",748,PINK),("/* (other)",175,MAUVE),("/ (root)",59,BLUE),("/ada-website",34,TEAL),
-           ("/website",8,GREEN),("/ada-member-advantage",7,PURPLE),("/onDiem-youtube",6,ORANGE)]),
-    "Human figures apply the domain-wide 69% human rate (Short.io reports human vs. bot only at the domain level). The ADA partnership email link (campaign ada_partnership_2025) is ~half of all clicks; links route to varied destinations — ADA, partner pages, YouTube — not only ondiem.com.")
-sh_daily=chart_card("Daily human clicks (est.)",
-    area(short_days_human, short_labels, color=GREEN, hi_idx=[1,8]),
-    "Two email-driven spikes — Jun 24 (~483) and Jul 1 (~252 human) — then a long tail, with no new links created in the window.")
-sh_quality=chart_card("Human vs. automated clicks",
-    donut([("Human clicks",1521,GREEN),("Bots / scanners (extrapolated)",681,MUTED)],"1,521","human"),
-    "Of 2,202 logged clicks, ~31% are non-human and are filtered out of the figures above. The top ‘city’ is Ashburn, VA (628 — an AWS data-center hub), with more from China, the Netherlands and Singapore — typical email security-scanner traffic.")
-s_short=section("links","Link tracking",TEAL,
-    'Branded links — <span class="hl" style="background:'+GREEN+'33">Short.io (ondiem.co)</span>',
-    "Human click performance on onDiem's branded short links — mostly campaign, email and partnership links. Bot/scanner traffic is extrapolated out. Window Jun 23 – Jul 24, 2026.",
-    sh_tiles+'<div class="grid2">'+sh_links+sh_daily+'</div>'+short_last7+sh_quality)
+    "The public-facing site, powered by search and brand. Traffic held steady. The conversion path did not.",
+    s2_tiles+'<div class="grid2">'+site_channels+site_pages+'</div>'+form_call+'<div class="grid2">'+site_trend+site_mobile+'</div>'+site_partners)
 
 # ============ SECTION 3: PAID SEARCH ============
 s3_tiles=tiles([
-    ("$1,523","Ad spend",ORANGE),
-    ("1,529","Clicks",PINK),
-    ("49.3%","Click-through rate",GREEN),
-    ("~$1.00","Cost per click",TEAL),
-    ("0","Conversions tracked",RED,"measurement gap"),
+    ("$1,555","Spend",ORANGE),
+    ("1,667","Clicks",NAVY),
+    ("50.2%","CTR",TEAL),
+    ("$0.93","Avg. CPC",GREEN),
+    ("0.02","Conversions tracked",RED),
 ])
-paid_kw=chart_card("Spend is 100% brand defense",
-    hbars([('"ondiem"',1147.86,ORANGE),('"on diem"',375.52,YELLOW),
-           ("Generic keywords (staffing, hire RDH…)",0,MUTED)],
-          maxv=1200, unit="", fmt=lambda v:f"${v:,.0f}"),
-    "All spend went to navigational brand searches. The generic acquisition keywords are enabled but not serving, and the geo web-traffic campaigns (Atlanta/Houston/Chicago/Miami, ~$1,300 last month) are now at $0.")
-paid_dow=chart_card("Demand by day of week",
-    vbars([("Sun",238,MUTED),("Mon",775,ORANGE),("Tue",771,ORANGE),("Wed",501,YELLOW),("Thu",421,YELLOW),("Fri",239,MUTED),("Sat",157,MUTED)],
-          fmt=lambda v:f"{v:,}"),
-    "Impressions peak Monday–Tuesday and in the 7–10 AM window — the same rhythm as the marketplace.")
-paid_auction=chart_card("Auction insights — competitors bid on your brand",
-    table(["Advertiser","Impr. share","Outranks onDiem","Top of page"],
-        [["onDiem (You)","61.4%","—","87.4%"],
-         ["teero.com","48.6%","55.7%","93.0%"],
-         ["clouddentistry.com","23.7%","58.6%","87.5%"],
-         ["gotu.com","19.6%","59.8%","83.5%"],
-         ["princessdentalstaffing.com","<10%","60.9%","80.2%"],
-         ["directdental.com","<10%","60.8%","59.6%"]],
-        aligns=["left","right","right","right"], hi_cols=[2], hi_color=RED),
-    "Teero shows alongside onDiem 53% of the time and outranks it in 55.7% of shared auctions — active brand-term competition.")
-paid_device=chart_card("Paid clicks by device",
-    donut([("Mobile phones",873,PINK),("Computers",641,NAVY),("Tablets",15,YELLOW)],"57%","mobile"),
-    "Mobile takes the larger share of paid spend and clicks; audience is 85% female, ages 25–54.")
-paid_last7=card(
-    '<div class="l7-tag">LAST 7 DAYS · JUL 23–29 &nbsp;·&nbsp; VS 30-DAY WEEKLY PACE</div>'
-    '<h3 class="ctitle" style="margin-top:4px">Most recent week — Google Ads</h3>'
-    '<p class="csub" style="margin-bottom:12px">$307 spend · 362 clicks · 51.1% CTR · $0.85 avg CPC · 0 conversions — clicks and CTR ran slightly ahead of the 30-day weekly pace (~357 clicks/wk, 49.3% CTR). Still the single enabled brand campaign.</p>'
-    + table(["Ad (responsive search)","Strength","Clicks","CTR","Avg CPC","Spend"],
-        [['“onDiem”','Excellent','322','54.3%','$0.81','$261.52'],
-         ['“onDiem, a better way to temp”','Poor','40','34.8%','$1.15','$45.80']],
-        aligns=["left","left","right","right","right","right"], hi_cols=[2])
-    + '<p class="csub" style="margin-top:10px">One ad does the work: the ‘Excellent’-rated ad drives 89% of clicks at a lower CPC, while the ‘Poor’-rated ad costs more per click for far less volume — a clear candidate to rewrite or pause. Final URL now points to hub.ondiem.com; conversion tracking still reads 0.</p>')
+paid_trend=chart_card("Daily clicks — demand peaks Monday and Tuesday",
+    area(paid_days, day_labels, color=ORANGE),
+    "The paid curve tracks the marketplace curve. Mondays run 79–90 clicks against 16–27 on Sundays.")
+paid_device=chart_card("Clicks by device",
+    donut([("Mobile",946,PINK),("Desktop",705,NAVY),("Tablet",16,YELLOW)],"57%","mobile"),
+    "Mobile carries the majority of paid clicks and runs a +49% bid adjustment.")
+auction=chart_card("Auction insights — impression share on brand terms",
+    hbars([("onDiem",64.71,TEAL),("Teero",40.63,PINK),("Cloud Dentistry",32.57,PURPLE),("GoTu",16.91,BLUE),
+           ("Direct Dental",10.0,MUTED),("Princess Dental",10.0,MUTED),("Job Medley",10.0,MUTED)],
+          maxv=70, unit="%", fmt=lambda v:f"{v:.1f}"),
+    "onDiem holds 64.7% impression share and 77.2% absolute top-of-page on its own name. Bars marked 10% are reported by Google as “< 10%”.")
+paid_note=card('<h3 class="ctitle">Two corrections worth carrying forward</h3>'
+    '<p class="fnote"><b>Auction insights were read inverted last period.</b> In Google Ads, <i>outranking share</i> on a competitor row means how often '
+    '<b>onDiem</b> ranked above <b>them</b>. onDiem outranks Teero 59.4% of the time and Teero appears above onDiem 18.9% of the time when both show. '
+    'The brand position is strong, not under pressure. The competitor set has however doubled from three to six.</p>'
+    '<p class="fnote"><b>Paid&rsquo;s share of platform traffic is overstated.</b> Platform GA4 credits google/cpc with 7,321 sessions; Google Ads recorded 1,667 clicks — '
+    'a factor of 4.4. GA4 sessions carry their original source across return visits, so much of that 16.5% is returning users who first arrived via an ad. '
+    'Separately, 1,567 of 1,615 attributed clicks land on <b>hub.ondiem.com</b>, which sits outside both GA4 properties in this report.</p>')
 s3=section("paid","Paid media",ORANGE,
-    'Paid search — <span class="hl" style="background:'+ORANGE+'33">Google Ads</span>',
-    "A lean, brand-protective account. Efficient on brand terms, but pulled back from prospecting and unable to measure conversions.",
-    s3_tiles+paid_last7+paid_kw+'<div class="grid2">'+paid_dow+paid_device+'</div>'+paid_auction)
+    'Paid search — <span class="hl" style="background:'+ORANGE+'33">brand defence</span>',
+    "One campaign, $50 a day, two phrase-match keywords on the brand name. The geo campaigns are not paused — they no longer exist in the account.",
+    s3_tiles+'<div class="grid2">'+paid_trend+paid_device+'</div>'+auction+paid_note)
 
-# ============ SECTION 4: SOCIAL ============
+# ============ SECTION 4: AI VISIBILITY ============
 s4_tiles=tiles([
-    ("8,872","Total followers",PURPLE),
-    ("3,099","Instagram ▲25",PINK),
-    ("3,608","Facebook ▼3",BLUE),
-    ("2,165","LinkedIn ▲5",TEAL),
+    ("15%","Share of voice",PURPLE,"4th of six brands"),
+    ("36.0","Visibility score",RED,"from 43.3"),
+    ("5.6%","Citations from owned pages",TEAL),
+    ("16","Google reviews",GREEN,"from 9 · rating 4.3"),
 ])
-soc_ct=chart_card("Instagram views by content type — reels dominate",
-    hbars([("Reels",3483,PINK),("Posts",1016,MAUVE),("Carousels",774,GREEN),("Stories",769,BLUE),("Ads",4,ORANGE)]),
-    "4 reels out-viewed 6 feed posts and drove the majority of interactions. Reel engagement (5.35%) beats feed posts (3.97%).")
-soc_eng=chart_card("Engagement rate by channel & format",
-    hbars([("LinkedIn (link posts)",25.1,TEAL),("Instagram reels",5.35,PINK),("Instagram posts",3.97,MAUVE),("Facebook posts",1.8,BLUE)],
-          maxv=27, unit="%", fmt=lambda v:f"{v:g}"),
-    "LinkedIn is the click engine — 6 posts produced 155 clicks; Instagram is the reach engine; Facebook lags.")
-soc_top=chart_card("Top posts across platforms",
-    table(["Post","Platform","Reach / Impr.","Result"],
-        [["“We're officially at RDH…” reel (Jul 17)","Instagram","333","452 views · 10.2% eng"],
-         ["“Hm… what could it be?” pin teaser (Jul 9)","Facebook","205","397 views"],
-         ["“Summer means vacation…” doc (Jun 25)","LinkedIn","98","71 clicks · 74% eng"],
-         ["“Got questions?” doc carousel (Jun 26)","LinkedIn","123","70 clicks · 59% eng"],
-         ["“Got questions?” carousel (Jun 26)","Instagram","124","305 views"]],
-        aligns=["left","left","right","right"], hi_cols=[3], hi_color=PINK),
-    "The RDH Under One Roof event drove the top-reaching content on both Meta platforms; LinkedIn documents drove the clicks.")
-soc_comp=chart_card("Instagram vs. competitors (followers)",
-    hbars([("Princess Dental Staffing",8368,MUTED),("Teero",3159,MUTED),("onDiem",3099,PINK),("Kwikly",2431,MUTED)]),
-    "onDiem sits mid-pack — ahead of Teero and Kwikly, behind Princess (which leans heavily on reels).")
-soc_aud=card('<h3 class="ctitle">Audience — consistent across platforms</h3>'
-    '<p class="csub">Predominantly female, ages 25–44, in US dental metros — matching the dental-hygienist ICP. LinkedIn adds a professional overlay.</p>'
-    '<div class="tags">'+''.join(f'<span class="tag">{esc(t)}</span>' for t in
-    ["84% female","Ages 25–44","NYC","LA / SF Bay","Dallas–Ft. Worth","Phoenix","Portland","Entry + Senior (LI)","IT · BizDev · Sales (LI)"])+'</div>')
-_g=f'<span style="color:{GREEN};font-weight:700">'; _r=f'<span style="color:{RED};font-weight:700">'
-social_last7=card(
-    '<div class="l7-tag">LAST 7 DAYS · JUL 23–29 &nbsp;VS&nbsp; PREVIOUS 7 DAYS · JUL 16–22</div>'
-    '<h3 class="ctitle" style="margin-top:4px">Week-over-week by platform</h3>'
-    '<table class="tbl"><thead><tr>'
-    '<th style="text-align:left">Platform</th>'
-    '<th style="text-align:right">New followers<br><span style="font-weight:400;opacity:.7">this wk</span></th>'
-    '<th style="text-align:right">New followers<br><span style="font-weight:400;opacity:.7">last wk</span></th>'
-    '<th style="text-align:left">Reach &amp; engagement · this wk vs last wk</th>'
-    '</tr></thead><tbody>'
-    f'<tr><td style="text-align:left;font-weight:600">Instagram</td>'
-    f'<td style="text-align:right">{_g}+4</span></td><td style="text-align:right">{_g}+35</span></td>'
-    f'<td style="text-align:left">1,901 views vs 5,522 {_r}▼</span> · 89 interactions vs 159 {_r}▼</span> — post-event drop</td></tr>'
-    f'<tr><td style="text-align:left;font-weight:600">Facebook</td>'
-    f'<td style="text-align:right">{_r}−1</span></td><td style="text-align:right">{_r}−2</span></td>'
-    f'<td style="text-align:left">209 views vs 1,443 {_r}▼</span> · 0 reactions vs 17 — sharp post-event drop</td></tr>'
-    f'<tr><td style="text-align:left;font-weight:600">LinkedIn</td>'
-    f'<td style="text-align:right">{_g}+2</span></td><td style="text-align:right">{_r}−1</span></td>'
-    f'<td style="text-align:left">338 impressions vs 280 {_g}▲</span> · 22 clicks vs 62 {_r}▼</span></td></tr>'
-    '</tbody></table>'
-    '<p class="csub" style="margin-top:10px">All figures are exact for both weeks. The previous week (Jul 16–22) was the RDH Under One Roof event peak, so Instagram and Facebook reach and engagement fell sharply the following week — LinkedIn was the exception, turning follower-positive and lifting impressions.</p>')
-s4=section("social","Owned social",PINK,
-    'Social — <span class="hl" style="background:'+PINK+'33">Instagram · Facebook · LinkedIn</span>',
-    "The RDH Under One Roof conference powered the period. Each platform plays a distinct role: Instagram for reach, LinkedIn for clicks, Facebook fading.",
-    s4_tiles+social_last7+'<div class="grid2">'+soc_ct+soc_eng+'</div>'+soc_top+'<div class="grid2">'+soc_comp+soc_aud+'</div>')
+sov=chart_card("Share of voice across AI answers",
+    hbars([("GoTu",21,BLUE),("Cloud Dentistry",19,PURPLE),("Kwikly",17,MAUVE),("onDiem",15,TEAL),
+           ("Toothio",13,ORANGE),("Stynt",6,MUTED)], maxv=24, unit="%", fmt=lambda v:f"{v:g}"),
+    "onDiem sits fourth of six brands tracked.")
+vis_trend=chart_card("Visibility over six weekly snapshots",
+    mline([("onDiem",[43.3,43.8,36.2,41.0,31.4,36.0],TEAL),
+           ("GoTu",[50.0,50.5,50.0,59.0,51.4,52.0],BLUE),
+           ("Cloud Dentistry",[40.0,43.8,48.1,46.7,46.7,47.0],PURPLE),
+           ("Kwikly",[46.7,41.4,39.5,47.6,41.9,48.0],MAUVE),
+           ("Princess Dental",[3.3,11.0,10.0,12.4,16.7,22.0],PINK)],
+          ["Jun 28","Jul 5","Jul 12","Jul 19","Jul 26","Aug 2"], maxv=65, hi="onDiem"),
+    "onDiem is the only brand in the top four trending down. Princess Dental Staffing rose from 3.3 to 22 over the same six weeks.")
+engines=chart_card("Visibility by engine",
+    pairbars([("ChatGPT",60.0,33.3,PINK),("Gemini",50.0,50.0,TEAL),("Perplexity",20.0,20.0,BLUE)],
+             unit="%"),
+    "The decline is concentrated in ChatGPT, which roughly halved. Gemini is the strongest engine and is holding. Perplexity is the weakest and flat.")
+cite_mix=chart_card("Where AI answers source their citations",
+    pairbars([("Peer / directory",51.8,37.5,BLUE),("Competitor-owned",22.5,32.4,PINK),("Earned",12.9,12.6,GREEN),
+              ("Review sites",4.0,6.8,YELLOW),("Owned",3.6,5.6,TEAL),("UGC",5.2,5.1,MAUVE)],
+             unit="%"),
+    "Neutral directory sources fell while competitor-owned pages rose by ten points. Answers are increasingly sourced from pages competitors wrote about themselves.")
+owned=chart_card("Most-cited onDiem pages",
+    hbars([("ondiem.com",231,TEAL),("hub / ondiem-darby",45,GREEN),("hub.ondiem.com",29,BLUE),
+           ("ondiem.com/ada",25,PURPLE),("hub / ba_practice",18,MAUVE),("hub / care-benefits-adha",16,PINK)]),
+    "Partnership content is the strongest asset here. ada.org itself contributes a further 134 earned citations.")
+aeo_note=card('<h3 class="ctitle">Reviews are moving. Visibility is not — yet.</h3>'
+    '<p class="fnote">The automated review request has taken Google from <b>9 reviews at 3.7</b> to <b>16 at 4.3</b> after roughly a year of none, and review sites '
+    'account for 6.8% of citations. Those two facts sit next to each other but should not yet be joined: onDiem&rsquo;s visibility <i>fell</i> from 43.3 to 36.0 over the '
+    'same weeks. Two months of review activity cannot move a citation base this quickly. Treat reviews as a position being rebuilt, not as a lever already pulled.</p>'
+    '<p class="fnote">Two open items affect this section directly. The app store listing sits at <b>5 reviews and 1.8</b> and the automation does not currently point at it. '
+    'And two Google Business accounts remain unmerged, which splits the review count.</p>')
+s4=section("aeo","Discovery",PURPLE,
+    'Visibility in <span class="hl" style="background:'+PURPLE+'33">AI answers</span>',
+    "How often onDiem appears when the AI engines answer questions about dental staffing, and which sources they draw on. Measured Jun 29 &ndash; Aug 6, so slightly wider than the rest of this report.",
+    s4_tiles+'<div class="grid2">'+sov+engines+'</div>'+vis_trend+'<div class="grid2">'+cite_mix+owned+'</div>'+aeo_note)
 
-# ============ SECTION 5: EMAIL & SURVEY ============
+# ============ SECTION 5: SOCIAL ============
 s5_tiles=tiles([
-    ("1,050","Emails delivered",BLUE),
-    ("18.6%","Open rate",TEAL,"excl. bots"),
-    ("28","Unique clicks",PINK),
-    ("14","Survey responses",GREEN,"39% completion"),
+    ("8,881","Total followers",PURPLE,"IG + FB + LinkedIn"),
+    ("15.6K","Instagram views",PINK,"up from ~6K"),
+    ("81%","Views from non-followers",BLUE),
+    ("46","Site visits from social",RED,"from 51 posts"),
 ])
-em_funnel=chart_card("Email funnel — Practice First Shift Survey",
-    hbars([("Delivered",1050,NAVY),("Unique opens",195,TEAL),("Unique clicks",28,PINK),("Replies",0,MUTED)]),
-    "Clean deliverability (0 spam, 3 unsubscribes) but a narrow open→click step.")
-em_mobile=chart_card("The mobile drop-off",
-    vbars([("Mobile\nopens",39,PINK),("Mobile\nclicks",17,PINK),("Desktop\nopens",28,BLUE),("Desktop\nclicks",83,BLUE)],
-          maxv=90, unit="%", fmt=lambda v:f"{v:g}%"),
-    "Mobile drives 39% of opens but only 17% of clicks; desktop is the reverse. CTA/mobile friction is losing earned clicks.")
-em_survey=card('<h3 class="ctitle">What practices told the survey</h3>'
-    '<p class="csub">36 views → 14 responses (39%). Sentiment by topic:</p>'+
-    table(["Topic","Practice sentiment"],
-        [["Creating a shift","Easy to very easy"],
-         ["Finding coverage","Softest area — limited local candidates, slow response"],
-         ["Approving timecards","Mostly easy"],
-         ["Cancellation policy","Polarizing — several strongly negative"],
-         ["Overall satisfaction","Mid-scale — room to move to advocates"]],
-        aligns=["left","left"]))
-inflight=card(
-    '<div class="l7-tag">2ND FOLLOW-UP · SENT JUL 22 · RESULTS IN</div>'
-    '<h3 class="ctitle" style="margin-top:4px">Follow-up send vs. the first survey email</h3>'
-    '<p class="csub">The resend (“What would make onDiem work better for you?”) applied this report’s recommendations — benefit-led subject, a stated “2-minute” ask, previewed questions — but going to a colder non-opener audience it landed a touch below the original on every engagement measure.</p>'
-    + table(["Metric","1st send","2nd follow-up"],
-        [["Sent / delivered","1,053 / 1,050","961 / 960"],
-         ["Open rate (excl. bots)","18.57%","16.88%"],
-         ["Unique opens","195","162"],
-         ["Click rate (excl. bots)","2.67%","1.67%"],
-         ["Unique clicks","28","16"],
-         ["Click-through (of opens)","14.36%","9.88%"],
-         ["Replies / unsub / spam","0 / 3 / 0","0 / 7 / 1"]],
-        aligns=["left","right","right"], hi_cols=[2])
-    + '<p class="csub" style="margin-top:10px">The <b>mobile CTA gap persists</b>: mobile was 31% of opens but only 13% of clicks, while desktop drove 88% of clicks — the same friction flagged on the first send. Attention was shallow (55.8% “glanced”, 27.6% “read”), and Gmail (50%) + Apple Mail iOS (23%) dominated opens.</p>')
-s5=section("email","Lifecycle",GREEN,
-    'Email &amp; survey — <span class="hl" style="background:'+GREEN+'33">Practice First Shift Survey</span>',
-    "A single send to 1,053 practices, plus the resulting survey. Solid deliverability, but a mobile CTA gap and a clear message on where practices feel friction.",
-    s5_tiles+'<div class="grid2">'+em_funnel+em_mobile+'</div>'+em_survey+inflight)
+ig_type=chart_card("Instagram views by content type",
+    hbars([("Carousel",8148,GREEN),("Reel",5846,PINK),("Post",985,PURPLE),("Story",793,BLUE)]),
+    "Account-level views, which include back-catalogue content still circulating. Carousel took the top slot on the strength of a single Jul 30 post that drew 6,292 views on hashtag distribution.")
+ig_int=chart_card("Instagram interactions by content type",
+    hbars([("Reel",186,PINK),("Post",137,PURPLE),("Story",36,BLUE)]),
+    "Reels lead on interactions despite lower view volume. The Jul 30 carousel engaged at 0.91% — the lowest of any content this period.")
+li_tbl=table(
+    ["LinkedIn post","Format","Impressions","Clicks","Eng."],
+    [["Better days in dentistry","Document","97","22","24.7%"],
+     ["Staff retention","Multi-image","278","3","4.3%"],
+     ["Booth 1014 preview","Video","147","5","6.8%"],
+     ["Keep your eyes peeled","Image","142","5","4.9%"],
+     ["Dental Assistant Palooza","Multi-image","130","2","3.1%"],
+     ["RDH enamel pin tease","Image","97","2","4.1%"]],
+    hi_cols=[3], hi_color=GREEN)
+li=card('<h3 class="ctitle">LinkedIn: the document format leads again</h3>'
+    '<p class="csub">One post produced 22 of the 39 post-level clicks from a third of the impressions of the next-largest post.</p>'
+    +li_tbl+
+    '<p class="fnote">This is the second consecutive period in which document and carousel formats out-converted every other format on LinkedIn. '
+    'Two periods with the same result makes it a pattern worth building on rather than an outlier. Account-level clicks nonetheless fell from 155 to 118 across the same six-post cadence.</p>')
+comp=chart_card("Instagram followers vs competitors",
+    pairbars([("Princess Dental",8370,9738,PINK),("Teero",3160,3392,BLUE),("onDiem",3099,3109,TEAL),("Kwikly",2430,2450,MAUVE)],
+             fmt=lambda v:f"{v:,.0f}"),
+    "Princess Dental Staffing grew roughly 16% in a month. onDiem grew 0.3%. Windows overlap, so treat the magnitudes loosely and the direction seriously.")
+fb=card('<h3 class="ctitle">Facebook</h3>'
+    '<p class="fnote">3,604 followers, with <b>2 acquired against 7 lost</b> — a third consecutive period of decline on a page receiving the same creative as Instagram. '
+    'Three posts, two reels and fourteen stories produced 733 and 737 views respectively, 27 reactions and 21 clicks.</p>')
+social_note=card('<h3 class="ctitle">Reach roughly tripled. Followers grew by 37.</h3>'
+    '<p class="fnote">Instagram views went from about 6,000 to 15.56K, and <b>12.75K of those views came from non-followers</b> against 2,965 from followers — 81%, up from '
+    'roughly 57% last period. Hashtag distribution is putting the brand in front of two and a half times more people. '
+    'Across 51 pieces of content on three platforms, organic social sent <b>46 visits</b> to ondiem.com.</p>')
+s5=section("social","Owned social",PINK,
+    'Social — <span class="hl" style="background:'+PINK+'33">reach without handoff</span>',
+    "Instagram, Facebook and LinkedIn. Distribution improved sharply. What follows distribution did not.",
+    s5_tiles+'<div class="grid2">'+ig_type+ig_int+'</div>'+social_note+li+'<div class="grid2">'+comp+fb+'</div>')
 
-# ============ SECTION 5B: PROFESSIONAL FIRST-SHIFT FEEDBACK ============
-vp_tiles=tiles([
-    ("663","Pro responses",PINK,"cumulative, Oct '24–Jul '26"),
-    ("91.6%","Shift went as expected",GREEN,"607 of 663"),
-    ("39%","Haven't set availability",RED,"supply-activation gap"),
-    ("GoTu","Top other platform pros use",ORANGE,"22.8% also on it"),
-])
-vp_exp=chart_card("Did the first shift go as expected?",
-    donut([("Yes",607,GREEN),("No",50,RED)],"92%","said yes"),
-    "A strong first-shift satisfaction signal — the marketplace largely delivers on the booking.")
-vp_platforms=chart_card("Pros multi-home — other platforms they use",
-    hbars([("GoTu",151,ORANGE),("Kwikly",68,MAUVE),("Cloud Dentistry",63,BLUE),("Princess Dental",31,PURPLE),("Tooth.io",25,TEAL)]),
-    "Nearly half also list ‘other/none’, but GoTu is the clear rival — the same names that bid on onDiem's brand in Google Ads.")
-vp_why=chart_card("When a shift wasn't as expected — why",
-    hbars([("Didn't know their system/software",47,RED),("Shift shorter than booked",29,ORANGE),
-           ("Shift longer than booked",19,YELLOW),("Work wasn't what I signed up for",6,MAUVE),("Lacked expected credentials",3,PURPLE)],
-          maxv=50),
-    "Unfamiliar practice software is the leading cause — an onboarding/prep opportunity.")
-vp_q=chart_card("What pros ask about most",
-    hbars([("Pay — when & how I get paid",25,PINK),("Scheduling / setting availability",19,TEAL),
-           ("Getting more shifts / going full-time",17,GREEN),("Timecard approval & corrections",10,BLUE),
-           ("App usability / confusion",9,PURPLE),("Onboarding (routing #, I-9)",6,ORANGE)]),
-    "Pay is the #1 question by a wide margin — ‘when will I be paid?’, ‘is there same-day cash-out?’ — followed by how to set availability.")
-vp_callout=callout("Two quick wins from the pro voice",[
-    "<b>Make pay crystal-clear.</b> Payment timing and cash-out is the single most-asked question — a visible ‘when you'll be paid’ explainer at booking and in the app would deflect the most common friction.",
-    "<b>Activate the 39% with no availability set.</b> Four in ten pros haven't marked their calendar, so practices can't find them — a targeted nudge directly grows bookable supply.",
-], kicker="ACTIONABLE")
-s5b=section("profeedback","Voice of the pro",PINK,
-    'Professional first-shift feedback — <span class="hl" style="background:'+PINK+'33">663 responses</span>',
-    "Cumulative feedback from professionals after their first onDiem shift (Oct 2024–Jul 2026). High satisfaction, clear friction points, and a direct read on what pros want.",
-    vp_tiles+'<div class="grid2">'+vp_exp+vp_platforms+'</div>'+'<div class="grid2">'+vp_why+vp_q+'</div>'+vp_callout)
-
-# ============ SECTION 6: CONVERSION ============
+# ============ SECTION 6: LINK TRACKING ============
 s6_tiles=tiles([
-    ("451","Event leads",PURPLE),
-    ("89","Already on onDiem",TEAL,"19.7%"),
-    ("362","Opportunity to convert",PINK,"80.3%"),
-    ("99.1%","Dental Hygienists",NAVY),
+    ("502","Short.io clicks",TEAL,"Jul 7 – Aug 5"),
+    ("257","On Jul 24 alone",ORANGE,"ADA email send"),
+    ("54%","Human clicks",RED,"from 69%"),
+    ("296","ADA email link",PURPLE,"largest path"),
 ])
-conv_donut=chart_card("Conversion opportunity",
-    donut([("Opportunity to convert",362,PINK),("Already have an account",89,TEAL)],"362","to convert"),
-    "4 in 5 professionals met at RDH Under One Roof don't yet have an onDiem account.")
-conv_states=chart_card("Where the opportunity concentrates (unconverted pros by state)",
-    hbars([("Maryland",61,PINK),("Virginia",47,PINK),("Pennsylvania",42,PINK),("Michigan",21,PURPLE),
-           ("Texas",15,PURPLE),("Ohio",12,PURPLE),("Missouri",12,PURPLE),("Florida",11,PURPLE)]),
-    "MD, VA and PA alone are 40%+ of the 362 unconverted professionals.")
-conv_nurture=card('<h3 class="ctitle">Automated HubSpot nurture (drops anyone who converts)</h3>'+
-    stepper(["SMS (Mon)","Email (Mon)","Call (+2d)","Email","Email","Email","SMS + 2 closing emails"]))
-s6=section("conversion","Events & growth",PURPLE,
-    'Event conversion — <span class="hl" style="background:'+PURPLE+'33">RDH Under One Roof 2026</span>',
-    "The post-event contact list turned into a conversion pipeline. 451 clean leads, overwhelmingly hygienists, with a big untapped pool.",
-    s6_tiles+'<div class="grid2">'+conv_donut+conv_states+'</div>'+conv_nurture)
+short_chart=chart_card("Daily short-link clicks",
+    area(short_days, day_labels, color=TEAL, hi_idx=[17]),
+    "Jul 22 and 23 recorded nothing, then Jul 24 produced 257 clicks — over half the window in one day, almost certainly the monthly ADA email. Excluding it, the median day is 5 clicks.")
+short_note=card('<h3 class="ctitle">Bot traffic is rising</h3>'
+    '<p class="fnote">Human clicks fell to <b>54.0%</b> of total from 69.1% last period. The geography explains it: Ashburn 165, Columbus 51, Singapore 40, '
+    'the Netherlands 33, China 31 — datacentre and scanner traffic rather than dental practices. Per-day human figures on this chart are extrapolated from the '
+    'domain-level rate, as Short.io reports the human/bot split only at domain level.</p>'
+    '<p class="fnote">The <code>/ada-email</code> path carries 296 of the 502 clicks and the <code>ada_partnership_2025</code> campaign 293. '
+    'The previous export showed a comparable spike on Jun 24. Two points is not a cadence, but a third would make it one.</p>')
+s6=section("links","Partnerships",GREEN,
+    'Link tracking — <span class="hl" style="background:'+GREEN+'33">Short.io</span>',
+    "Tracked short links, almost entirely the ADA partnership programme.",
+    s6_tiles+short_chart+short_note)
 
-# ============ SECTION 7: PROFILE COMPLETION ============
+# ============ SECTION 7: EMAIL, SURVEY & EVENT ============
 s7_tiles=tiles([
-    ("765","Pros tracked",TEAL),
-    ("15.6%","Fully complete",GREEN,"up from 13.7%"),
-    ("65.8%","Missing a bio",PINK,"biggest gap"),
-    ("2.79","Avg sections missing",NAVY,"was 2.88"),
+    ("701","Practices emailed",GREEN,"six cities, Aug 5"),
+    ("10.8%","Open rate",NAVY,"24 hours after send"),
+    ("22","Survey responses",TEAL,"of 1,050 · from 14"),
+    ("4","RDH event sign-ups",RED,"1.12% of leads"),
 ])
-pc_sms=chart_card("Profile-completion SMS funnel",
-    hbars([("Received the SMS",528,NAVY),("Clicked the link",83,TEAL),("Completed ≥1 section",41,PINK)]),
-    "83 clicked (15.7% CTR) but only 41 finished a section (72 sections total) — the click-to-completion gap is the thing to close. Profile Photo was the easiest win (23).")
-pc_gaps=chart_card("Where the gaps live (% of pros missing)",
-    vbars([("Photo",57,PINK),("Bio",65,NAVY),("Work\nExp",61,TEAL),("Educ.",55,GREEN),("Software",16,YELLOW),("Special.",20,PURPLE)],
-          maxv=100, unit="%", fmt=lambda v:f"{v:g}%"),
-    "Personal Bio, Work Experience and Profile Photo are the most-incomplete sections.")
-pc_depth=chart_card("How many sections are pros missing?",
-    vbars([("0\n(done)",119,GREEN),("1",110,YELLOW),("2",107,ORANGE),("3",85,ORANGE),("4",212,PINK),("5",70,PURPLE),("6",55,PURPLE)],
-          maxv=230, fmt=lambda v:f"{v:,}"),
-    "212 pros (~1 in 3) are still missing 4 of the 6 sections — the target for a dedicated ‘finish your profile’ nudge.")
-pc_role=card('<h3 class="ctitle">Gap rate by role (% missing each section)</h3>'+
-    table(["Role","Pros","Photo","Bio","Work Exp","Educ.","Software","Special."],
-        [["Dental Assistant","363","59.5%","64.7%","60.3%","62.0%","15.7%","9.1%"],
-         ["Dental Hygienist","344","52.9%","63.7%","62.2%","44.8%","12.8%","29.4%"],
-         ["Dentist","28","75%","75%","64.3%","53.6%","32.1%","25%"],
-         ["Office Staff","30","90%","93.3%","96.7%","93.3%","56.7%","50%"]],
-        aligns=["left","right","right","right","right","right","right","right"], hi_cols=[2,3]))
-s7=section("profiles","Supply quality",TEAL,
-    'Pro profile completion — <span class="hl" style="background:'+TEAL+'33">765 professionals</span>',
-    "Profile completeness before and after a nudge SMS. Completeness ticked up, but most pros still have real gaps — especially bios.",
-    s7_tiles+'<div class="grid2">'+pc_sms+pc_gaps+'</div>'+'<div class="grid2">'+pc_depth+pc_role+'</div>')
+promo_tbl2=table(
+    ["City","Delivered","Unique opens","Open rate","Clicks"],
+    [["Portland","268","32","11.9%","2"],
+     ["Minneapolis","166","11","6.6%","0"],
+     ["Chicago","151","19","12.6%","0"],
+     ["Atlanta","60","8","13.3%","0"],
+     ["Houston","40","5","12.5%","0"],
+     ["Miami","16","1","6.3%","0"],
+     ["Total","701","76","10.8%","2"]],
+    hi_cols=[4], hi_color=PINK)
+promo_card=card('<h3 class="ctitle">August gift-card promo — first 24 hours</h3>'
+    '<p class="csub">One creative, city name swapped, sent Aug 5 — the last day of the window.</p>'
+    +promo_tbl2+
+    '<p class="fnote">These numbers will move and should not be read as final. More importantly, <b>clicks are the wrong measure here</b>: the offer redeems on a promo '
+    'code entered at shift creation, so a practice can convert without ever clicking. The May/June mailer took until August for its last timecards to clear, '
+    'so this campaign&rsquo;s real result lands two reports from now.</p>'
+    '<p class="fnote">Two setup notes for the next batch. The promo codes are identical across all six cities, so a booked shift cannot be traced back to a market — '
+    'city-suffixed codes would answer whether the digital send reproduces the physical mailer&rsquo;s Portland and Minneapolis pattern. '
+    'And the UTM medium was written four different ways across the six sends, which will split the campaign in GA4.</p>')
+event=card('<h3 class="ctitle">RDH Under One Roof — nurture result</h3>'
+    +funnel([("Unique pros captured at the event","451",PURPLE),
+             ("Without an onDiem account — the opportunity","362",PURPLE),
+             ("Signed up after the nurture sequence","4",RED)])+
+    '<p class="fnote">Four sign-ups, 1.12%, with two arriving after the third and fourth emails. One SMS and two emails remain in the workflow. '
+    'Against 451 leads from a single event, this is the clearest evidence in the report that lead volume is not the constraint.</p>'
+    '<p class="fnote">The practice survey now stands at <b>22 responses from 1,050</b>, up from 14 after the second send.</p>')
+s7=section("email","Lifecycle",GREEN,
+    'Email, survey &amp; <span class="hl" style="background:'+GREEN+'33">event conversion</span>',
+    "Direct outreach to practices and professionals, and what the RDH Under One Roof nurture ultimately produced.",
+    s7_tiles+promo_card+event)
+
+# ============ SECTION 8: PROFILE COMPLETION ============
+s8=section("profiles","Supply quality",TEAL,
+    'Profile <span class="hl" style="background:'+TEAL+'33">completion</span>',
+    "Professional profile completeness across the marketplace.",
+    tiles([("152","Clicks — round one",TEAL),("89","Clicks — round two",TEAL),
+           ("765","Pros tracked",NAVY,"carried forward"),("15.6%","Fully complete",PINK,"carried forward")])+
+    card('<p class="fnote">Completion figures for this round are pending. The baseline above is carried forward from the previous report, where 765 professionals were '
+         'tracked at 15.6% fully complete, with Personal Bio missing for 65.8%. '
+         'Round-two clicks fell 41% against round one, which may reflect a smaller remaining pool rather than fatigue — the completion counts will distinguish the two. '
+         'Last period the gap between 83 clicks and 41 completions was the finding, not the click count, and the same will apply here.</p>'))
 
 # ============ TAKEAWAYS ============
-take=callout("What this means for next week",[
-    "<b>Time everything to Monday.</b> The marketplace and paid demand both peak Sunday-night into Monday–Tuesday mornings — schedule shift-supply pushes, emails and ad budget there.",
-    "<b>Lean into reels and LinkedIn documents.</b> Reels drove 58% of Instagram views from a fraction of the posts, and LinkedIn document/carousel posts converted at 25%+ into clicks. That's the content mix to scale.",
-    "<b>Close the social/email → site gap.</b> A large social effort produced just 52 website visits and email 12. The mobile email CTA and social link-in-bio paths are leaking the traffic they earn.",
-    "<b>Coverage is the recurring pain.</b> ‘Finding coverage’ is practices' softest survey area and the supply answer is more hygienists — exactly the 362 warm RDH leads (MD/VA/PA) and the 212 incomplete pro profiles worth activating.",
-    "<b>Protect the brand in paid search.</b> Teero outranks onDiem in 55.7% of shared brand auctions — and the same rivals (GoTu, Cloud) are the platforms pros multi-home on — while 0 conversions are tracked. Fix conversion measurement before reopening prospecting.",
-    "<b>Answer ‘when do I get paid?’.</b> Pay is the #1 question in 663 first-shift responses despite 91.6% satisfaction — a visible pay-timing explainer is a cheap retention win.",
-], kicker="WEEKLY TAKEAWAYS")
+take=callout("What this means for next period",[
+    "<b>Reach improved almost everywhere. Every handoff held flat or leaked.</b> Instagram views roughly tripled with 81% from non-followers, "
+    "onDiem appears across three AI engines, and paid holds 64.7% impression share on its own name. Against that: 230 form starts produced 5 submissions, "
+    "51 social posts produced 46 site visits, AI visibility produced 7, and a 451-lead event produced 4 sign-ups.",
+    "<b>The one thing that converted was the gift-card mailer.</b> 15 confirmed shifts from roughly eight practices, all in Portland and Minneapolis, "
+    "driven by repeat posting from accounts that already existed. The August digital version targets those two markets among six.",
+    "<b>Fix the forms before adding more traffic to them.</b> The 2% completion rate is a known defect already logged behind the pro app. "
+    "Every channel in this report routes to a site whose only conversion action is broken.",
+    "<b>Give the August promo a measurable outcome.</b> City-suffixed promo codes and a single UTM medium would let the next report attribute booked shifts to a market. "
+    "Neither change costs anything and both must happen before the next send.",
+    "<b>Close the measurement gap at hub.ondiem.com.</b> It receives the paid traffic and the AI citations and sits outside both GA4 properties. "
+    "Platform GA4 also credits paid with 4.4&times; the sessions Google Ads recorded.",
+    "<b>Watch Princess Dental Staffing.</b> Three separate appearances this period — 16% Instagram growth, new to the brand-term auction, "
+    "and AI visibility from 3.3 to 22.",
+], kicker="TAKEAWAYS")
+
 
 # ============ ASSEMBLE ============
-nav=('<nav class="toc"><a href="#marketplace">Marketplace</a><a href="#website">Website</a>'
-     '<a href="#links">Links</a><a href="#paid">Paid</a><a href="#social">Social</a><a href="#email">Email</a>'
-     '<a href="#profeedback">Pro feedback</a><a href="#conversion">Conversion</a><a href="#profiles">Profiles</a></nav>')
+nav=('<nav class="toc"><a href="#updates">Updates</a><a href="#marketplace">Marketplace</a><a href="#website">Website</a>'
+     '<a href="#paid">Paid</a><a href="#aeo">AI visibility</a><a href="#social">Social</a>'
+     '<a href="#links">Links</a><a href="#email">Email</a><a href="#profiles">Profiles</a></nav>')
 
 header=(f'<header class="masthead"><div class="mh-top"><span class="brand">'
-        f'<span class="brand-mark">◑</span> onDiem</span><span class="period">MARKETING UPDATE · AS OF JULY 30, 2026</span></div>'
-        f'<h1 class="title">Weekly Performance <span class="hl" style="background:{TEAL}44">Report</span></h1>'
-        f'<p class="subtitle">A single view across the marketplace, marketing site, paid search, social, email, event conversion and profile quality. 30-day trends run through Jul 21; the most recent week (Jul 23–29) appears in each <b>Last 7 Days</b> panel. Prepared by Figment Creative.</p>'
+        f'<span class="brand-mark">&#9681;</span> onDiem</span><span class="period">30-DAY VIEW &middot; JUL 7 &ndash; AUG 5, 2026</span></div>'
+        f'<h1 class="title">Marketing Performance <span class="hl" style="background:{TEAL}44">Report</span></h1>'
+        f'<p class="subtitle">A single view across the marketplace, marketing site, paid search, AI visibility, social, partnerships, email and profile quality. Prepared by Figment Creative.</p>'
         f'{nav}</header>')
 
 body=(header+
       f'<section class="hero"><div class="sec-head">{eyebrow("At a glance", NAVY)}'
-      f'<h2 class="sec-title">The week in six numbers</h2></div>{hero_tiles}'
-      f'<p class="csub" style="margin-top:2px">Big number = 30-day total. <b>7d</b> = most recent week (Jul 23–29); <b>WoW</b> compares to the prior week where daily data exists (active users, site, social), the rest to the 30-day weekly pace.</p></section>'+
-      s1+s2+s_short+s3+s4+s5+s5b+s6+s7+
+      f'<h2 class="sec-title">The period in six numbers</h2></div>{hero_tiles}</section>'+
+      s0+s1+s2+s3+s4+s5+s6+s7+s8+
       f'<section>{take}</section>'+
-      f'<footer class="foot">onDiem Weekly Performance Report · Prepared July 30, 2026 · 30-day base window Jun 22 – Jul 21 (email &amp; profile reports as of Jul 20); latest week Jul 23–29 shown in the Last 7 Days panels · Sources: GA4, Metricool, Google Ads, Short.io, HubSpot · Internal use</footer>')
+      f'<footer class="foot">onDiem Marketing Performance Report &middot; Reporting window Jul 7 &ndash; Aug 5, 2026 &middot; AI visibility measured Jun 29 &ndash; Aug 6 &middot; Sources: GA4, Metricool, Google Ads, Short.io, HubSpot &middot; Internal use</footer>')
 
 CSS=f"""
 *{{box-sizing:border-box;margin:0;padding:0}}
-body{{background:{CREAM};color:{INK};font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;line-height:1.55;-webkit-font-smoothing:antialiased;zoom:1.5}}
+body{{background:{CREAM};color:{INK};font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;line-height:1.55;-webkit-font-smoothing:antialiased}}
 .wrap{{max-width:1120px;margin:0 auto;padding:40px 26px 80px}}
 h1,h2,h3,.t-num,.dnum{{font-family:Georgia,'Times New Roman',serif}}
 .masthead{{margin-bottom:34px}}
@@ -617,7 +610,6 @@ section{{margin-top:52px}}
 .t-num{{font-size:30px;font-weight:700;color:{NAVY};line-height:1.05}}
 .t-lab{{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:{INK};margin-top:6px}}
 .t-sub{{font-size:11.5px;color:{MUTED};margin-top:3px}}
-.t-wow{{font-size:11.5px;font-weight:600;color:{MUTED};margin-top:7px;padding-top:6px;border-top:1px solid {LINE}}}
 .card{{background:#fff;border:1px solid {LINE};border-radius:15px;padding:20px 22px;margin-bottom:16px}}
 .grid2{{display:grid;grid-template-columns:1fr 1fr;gap:16px}}
 .ctitle{{font-size:17px;color:{NAVY};font-weight:700;margin-bottom:3px}}
@@ -648,9 +640,7 @@ section{{margin-top:52px}}
 .fhead{{font-size:11px;font-weight:800;letter-spacing:1px;margin-bottom:10px}}
 .funnel{{display:flex;flex-direction:column;gap:5px}}
 .fstep{{background:{CREAM};border-radius:0 8px 8px 0;padding:9px 14px}}
-.frow{{display:flex;justify-content:space-between;align-items:baseline;gap:10px}}
 .fval{{font-size:20px;font-weight:700;color:{NAVY};font-family:Georgia,serif}}
-.fweek{{font-size:11px;font-weight:700;color:{NAVY};background:#fff;border:1px solid {LINE};border-radius:20px;padding:2px 9px;white-space:nowrap;flex:0 0 auto}}
 .flab{{font-size:12px;color:{MUTED}}}
 .farr{{text-align:center;color:{LINE};font-size:11px;line-height:1}}
 .stepper{{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-top:10px}}
@@ -667,25 +657,17 @@ section{{margin-top:52px}}
 .co-list li{{padding-left:22px;position:relative;font-size:14px;color:#dfe6ee}}
 .co-list li:before{{content:'';position:absolute;left:0;top:8px;width:8px;height:8px;border-radius:50%;background:{TEAL}}}
 .co-list b{{color:#fff}}
-.last7{{display:flex;align-items:center;gap:22px;flex-wrap:wrap;background:#fff;border:1px solid {LINE};border-radius:13px;padding:13px 20px;margin-bottom:16px}}
-.l7-a{{flex:1;min-width:200px}}
-.l7-tag{{font-size:10px;font-weight:800;letter-spacing:1.3px;color:{MUTED}}}
-.l7-val{{font-family:Georgia,serif;font-size:25px;font-weight:700;color:{NAVY};margin-top:3px}}
-.l7-lab{{font-family:-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;font-size:12.5px;font-weight:600;color:{MUTED}}}
-.l7-prev{{font-size:12px;color:{MUTED};margin-top:5px}}
-.l7-prev b{{color:{INK};font-weight:700}}
-.l7-b{{display:flex;flex-direction:column;align-items:flex-start;line-height:1.15}}
-.l7-delta{{font-size:19px;font-weight:800}}
-.l7-vs{{font-size:11px;color:{MUTED}}}
-.l7-c{{flex:0 0 auto;display:flex;flex-direction:column;align-items:flex-start}}
-.l7-leg{{display:flex;gap:4px;align-items:center;font-size:10px;color:{MUTED};margin-top:2px}}
-.l7-leg .sw{{width:10px;height:3px;border-radius:2px;display:inline-block;margin-left:6px}}
-.spark{{width:172px;height:46px;display:block}}
 .fnote{{margin-top:14px;padding-top:12px;border-top:1px solid {LINE};font-size:12px;color:{MUTED};line-height:1.5}}
 .fnote b{{color:{INK}}} .fnote code{{background:{CREAM};border:1px solid {LINE};border-radius:4px;padding:1px 5px;font-size:11px;color:{NAVY}}}
 .inflight{{display:flex;gap:14px;align-items:flex-start;background:{YELLOW}14;border:1px dashed {YELLOW};border-radius:12px;padding:14px 16px;margin-top:16px;font-size:13.5px;color:{INK}}}
 .if-tag{{flex:0 0 auto;background:{YELLOW};color:{NAVY};font-size:10px;font-weight:800;letter-spacing:1px;padding:4px 9px;border-radius:5px;margin-top:1px}}
 .inflight b{{color:{NAVY}}}
+.updgrid{{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}}
+.upd{{background:#fff;border:1px solid {LINE};border-radius:14px;padding:20px}}
+.upd-tag{{display:inline-block;font-size:10px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;padding:4px 10px;border-radius:5px;margin-bottom:11px}}
+.upd-title{{font-size:18px;color:{NAVY};font-weight:700;margin-bottom:8px}}
+.upd-body{{font-size:13.5px;color:{MUTED};line-height:1.6}}
+.upd-body b{{color:{INK}}}
 .foot{{margin-top:44px;padding-top:18px;border-top:1px solid {LINE};font-size:11.5px;color:{MUTED};text-align:center}}
 @media(max-width:720px){{.grid2,.twocol{{grid-template-columns:1fr}}.title{{font-size:32px}}.donut{{width:160px;height:160px}}}}
 """

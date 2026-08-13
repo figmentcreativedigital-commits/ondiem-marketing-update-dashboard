@@ -771,6 +771,17 @@ section{{margin-top:52px}}
 @media(max-width:600px){{.wowrow{{grid-template-columns:1fr .6fr .5fr}}.wow-spark{{display:none}}.wowhead .wow-spark{{display:none}}}}
 .foot{{margin-top:44px;padding-top:18px;border-top:1px solid {LINE};font-size:11.5px;color:{MUTED};text-align:center}}
 @media(max-width:720px){{.grid2,.twocol{{grid-template-columns:1fr}}.title{{font-size:32px}}.donut{{width:160px;height:160px}}}}
+
+/* ---- desktop reading size ----
+   The report is typeset in fixed px. Rather than raise every size individually,
+   the document renders at 125% on desktop and the content column is narrowed so
+   the scaled layout still fits a 1280px viewport. Charts use viewBox and scale
+   with it. Below 1180px the layout returns to 100% and the existing responsive
+   rules take over. */
+@media(min-width:1180px){{
+  body{{zoom:1.25}}
+  .wrap{{max-width:960px}}
+}}
 """
 
 htmlout=f"""<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">

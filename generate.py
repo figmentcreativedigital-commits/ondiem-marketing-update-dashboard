@@ -275,10 +275,11 @@ u1=updatecard("Converting",GREEN,"August $50 gift-card promo",
     "Seven sends to <b>837 practices</b> across six cities plus an all-cities list. The offer redeems on a promo code entered at "
     "shift creation. The codes have produced <b>20 filled shifts</b> so far. The campaign runs to Aug 31 and the second reminder "
     "hasn't gone out yet, so there's more to come.")
-u2=updatecard("In progress",YELLOW,"Partner site widget",
-    "Logan and Darya's partner availability widget detects any non-ondiem.com domain and renders "
-    "<b>\u201cFind staff ready to work, powered by onDiem.\u201d</b> No tagged traffic yet. The CTAs need UTMs before we can separate "
-    "widget sessions from existing referral traffic.")
+u2=updatecard("In test",TEAL,"Partner site widget",
+    "Logan and Pete Cerone at Darby have been working through visual updates to the Pro Availability widget. The header now reads "
+    "<b>\u201cFind staff ready to work, powered by onDiem\u201d</b> with the onDiem logo, giving practices more context on what they're "
+    "looking at. Darby is testing it on their homepage and working out placement. Darya is the technical contact on our side while "
+    "Logan is away. No performance data this period.")
 u3=updatecard("Launched",BLUE,"DOMA 2026",
     "A six-email practice sequence launched Aug 6, running to Sep 29 \u2014 follow-up, fast signup, staffing network, ADA member, "
     "reliable coverage, pro calendar. All assets built. <b>44 sends, 7 opens</b>. Not enough volume to read yet. "
@@ -652,9 +653,8 @@ take=callout("What this means for next period",[
     "<b>The site still leaks at the same point.</b> Form starts nearly doubled to 63 and produced one submission. The rate hasn't "
     "changed; the loss is bigger because more people are trying. /contact-us views rose 62% in the same week.",
 
-    "<b>Three tracking items carry over.</b> Paid has recorded zero conversions for four periods and lands on hub.ondiem.com, "
-    "outside both GA4 properties. The partner widget still has no UTMs. And 11.2% of platform sessions arrived unattributed this "
-    "week, which is new.",
+    "<b>Two tracking items carry over.</b> Paid has recorded zero conversions for four periods and lands on hub.ondiem.com, "
+    "outside both GA4 properties. And 11.2% of platform sessions arrived unattributed this week, which is new.",
 
     "<b>Two things to settle before the next report.</b> Whether the August ADA email is scheduled or skipped, since its absence "
     "is the entire link-tracking story. And the RDH sign-up count, since 237 contacts are still in a workflow marked complete.",

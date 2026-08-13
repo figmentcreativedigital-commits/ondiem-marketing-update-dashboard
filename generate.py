@@ -184,7 +184,7 @@ def pairbars(items, unit="", fmt=None):
     """items: (label, start_value, end_value, color) — shows movement start -> end."""
     if fmt is None: fmt=lambda v:f"{v:.1f}"
     maxv=max(max(a,b) for _,a,b,_ in items) or 1
-    W=680; labw=150; barw=W-labw-120; hp=42; H=len(items)*hp+10
+    W=680; labw=215; barw=W-labw-175; hp=42; H=len(items)*hp+10
     rows=[]
     for i,(lab,a,b,col) in enumerate(items):
         y=i*hp+8
@@ -194,7 +194,9 @@ def pairbars(items, unit="", fmt=None):
         rows.append(f'<rect x="{labw}" y="{y+18}" width="{wb:.1f}" height="13" rx="4" fill="{col}"/>')
         arrow="▲" if b>a else ("▼" if b<a else "—")
         acol=GREEN if b>a else (RED if b<a else MUTED)
-        rows.append(f'<text x="{labw+max(wa,wb)+9:.1f}" y="{y+21}" class="bv">{esc(fmt(a))}{esc(unit)} → {esc(fmt(b))}{esc(unit)}</text>')
+        vtxt=f'{fmt(a)}{unit} \u2192 {fmt(b)}{unit}'
+        vx=min(labw+max(wa,wb)+9, W-34-len(vtxt)*7.0)
+        rows.append(f'<text x="{vx:.1f}" y="{y+21}" class="bv">{esc(vtxt)}</text>')
         rows.append(f'<text x="{W-14}" y="{y+21}" text-anchor="end" class="bv" fill="{acol}">{arrow}</text>')
     return f'<svg viewBox="0 0 {W} {H}" class="chart" role="img">{"".join(rows)}</svg>'
 
@@ -367,7 +369,7 @@ plat_area=chart_card("Daily active users",
     area(plat_days, day_labels, color=TEAL, hi_idx=[4]),
     "The Monday cycle holds. Aug 10 drew 2,956 against 3,722 the Monday before.")
 plat_funnel=chart_card("Core marketplace actions, week over week",
-    pairbars([("Offers accepted (events)",44,60,GREEN),
+    pairbars([("Offers accepted (GA4 events)",44,60,GREEN),
               ("Shift creation started",424,503,TEAL),
               ("Job searches",2157,2393,BLUE),
               ("Listings created",640,676,PURPLE),

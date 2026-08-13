@@ -286,10 +286,14 @@ u3=updatecard("Launched",BLUE,"DOMA 2026",
     "A six-email practice sequence launched Aug 6, running to Sep 29 \u2014 follow-up, fast signup, staffing network, ADA member, "
     "reliable coverage, pro calendar. All assets built. <b>44 sends, 7 opens</b>. Not enough volume to read yet. "
     "First real numbers next period.")
+u4=updatecard("In market",ORANGE,"Darby supply credit",
+    "The same offer is running on the Darby side with a different mechanic, and the emails have started going out. A practice qualifies "
+    "through onDiem by completing the required action, onDiem passes the qualifying list to Darby, and Darby issues <b>unique single-use "
+    "$50 codes</b> redeemed on Darby's site. Darby reports redemptions back for billing reconciliation. No results yet.")
 s0=section("updates","What shipped",NAVY,
     'Updates <span class="hl" style="background:'+NAVY+'22">this period</span>',
-    "Three items in flight. One of them produced the only conversion number in this report.",
-    '<div class="updgrid">'+u1+u2+u3+'</div>')
+    "Four items in flight. One of them produced the only conversion number in this report.",
+    '<div class="updgrid">'+u1+u2+u3+u4+'</div>')
 
 # ============ SECTION 1: CAMPAIGNS ============
 s1_tiles=tiles([
@@ -318,7 +322,7 @@ code_tbl=chart_card("Promo code performance",
            ["Amazon","0","0","0","0"],
            ["Total","26","20","4","2"]],
           hi_cols=[2], hi_color=GREEN),
-    "Amazon drew nothing. Worth a look at how the four options were presented.")
+    "Amazon drew nothing, despite leading the creative and appearing in the code list. Preference, not placement.")
 promo_email=chart_card("The seven sends",
     table(["Send","Delivered","Opens","Open rate","Clicks"],
           [["All cities","136","29","21.3%","2"],

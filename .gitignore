@@ -1,5 +1,14 @@
+# Source exports for report compilation — not deployed
+report docs/
+report-docs/
+
+# OS / editor cruft
 .DS_Store
-node_modules/
-.vercel
+*.swp
+.vscode/
+.idea/
+
+# Generator intermediate output (index.html is the deployable file)
+onDiem_Weekly_Report.html
 __pycache__/
 *.pyc

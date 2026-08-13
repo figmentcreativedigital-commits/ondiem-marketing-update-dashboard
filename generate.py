@@ -243,7 +243,7 @@ paid_days=[68,35,11,26,80,93,72]
 # ============ HERO ============
 hero_tiles=tiles([
     ("20","Shifts filled on promo codes",GREEN,"August gift-card campaign"),
-    ("60","Offers accepted by pros",TEAL,"+36% week over week"),
+    ("33","Pros accepted offers",TEAL,"from 28 · +17.9%"),
     ("5,879","Platform active users",BLUE,"app.ondiem.com \u00b7 \u221210.4%"),
     ("3,638","Marketing site views",PURPLE,"ondiem.com \u00b7 +9.8%"),
     ("26.7","AI visibility score",RED,"new low, from 38.1"),
@@ -357,7 +357,7 @@ s1=section("campaigns","Lifecycle",GREEN,
 
 # ============ SECTION 2: MARKETPLACE ============
 s2_tiles=tiles([
-    ("60","Offers accepted",GREEN,"from 44 \u00b7 +36.4%"),
+    ("33","Pros accepted offers",GREEN,"from 28 \u00b7 +17.9%"),
     ("10,292","Sessions",TEAL,"+2.9%"),
     ("5,879","Active users",RED,"\u221210.4%"),
     ("3.02","Listings per posting practice",ORANGE,"from 2.51"),
@@ -366,14 +366,14 @@ plat_area=chart_card("Daily active users",
     area(plat_days, day_labels, color=TEAL, hi_idx=[4]),
     "The Monday cycle holds. Aug 10 drew 2,956 against 3,722 the Monday before.")
 plat_funnel=chart_card("Core marketplace actions, week over week",
-    pairbars([("Offers accepted",44,60,GREEN),
+    pairbars([("Offers accepted (events)",44,60,GREEN),
               ("Shift creation started",424,503,TEAL),
               ("Job searches",2157,2393,BLUE),
               ("Listings created",640,676,PURPLE),
               ("Pro registrations started",162,188,PINK),
               ("Shift requests",835,717,RED)],
              fmt=lambda v:f"{v:,.0f}"),
-    "Five of six rose. professional_accepted_offer is the most reliable booking proxy in the platform data.")
+    "Five of six rose. These are GA4 event counts, not booking counts — see the note below.")
 plat_users=chart_card("Where the decline sits",
     pairbars([("Desktop users",4423,3531,BLUE),
               ("Mobile users",2124,2332,PINK),
@@ -387,8 +387,12 @@ plat_sources=chart_card("Traffic sources",
     "10,292 sessions in total.")
 plat_note=card('<h3 class="ctitle">Fewer people, doing more</h3>'
     '<p class="fnote">Active users fell 10.4% while sessions rose 2.9%, and every core action except shift requests went up. '
-    'Accepted offers rose 36.4% in the same week the promo filled 20 shifts. The two line up, though platform data can\'t confirm '
-    'the connection on its own.</p>'
+    '<b>33 pros accepted an offer, up from 28</b>, in the same week the promo filled 20 shifts. The two line up, though platform data '
+    'can\'t confirm the connection on its own.</p>'
+    '<p class="fnote"><b>These are GA4 event counts, not booking counts.</b> <code>professional_accepted_offer</code> fired 60 times '
+    'across 33 pros, so the tile reports the deduplicated pro count rather than the raw event total. It is the most reliable booking '
+    'proxy in the platform data — <code>temp_shift_confirmed</code> logged 311 events from 5 accounts — but it is a proxy, not a ledger. '
+    'Confirmed bookings live in the platform database, not GA4.</p>'
     '<p class="fnote"><b>Concentration tightened again.</b> Listings rose 5.6% while the practices creating them fell from 255 to 224 '
     '\u2014 2.51 listings each up to 3.02. The pro side moved the other way: shift requests fell 14.1% while the pros making them rose '
     'from 97 to 120.</p>'
@@ -638,7 +642,7 @@ take=callout("What this means for next period",[
     "48 booked shifts rather than the 15 we reported while timecards were clearing.",
 
     "<b>The funnel improved while traffic thinned.</b> Active users fell 10.4% and first visits 13.9%, but sessions rose, "
-    "accepted offers rose 36.4%, and five of six core actions went up. Read with the promo, that's conversion moving the right "
+    "pros accepting offers rose from 28 to 33, and five of six core actions went up. Read with the promo, that's conversion moving the right "
     "way for the first time. It's also the first time the top of the funnel hasn't.",
 
     "<b>Discovery is going the other direction.</b> AI visibility hit a new low at 26.7, onDiem is the only tracked brand losing "
